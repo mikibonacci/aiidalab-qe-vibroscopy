@@ -1,7 +1,7 @@
 from aiidalab_qe_vibroscopy.harmonic.settings import Setting
 from aiidalab_qe_vibroscopy.harmonic.workchain import workchain_and_builder
 #from aiidalab_qe_eos.phonons.result import Result
-from aiidalab_qe.panel import OutlinePanel
+from aiidalab_qe.common.panel import OutlinePanel
 
 
 class Outline(OutlinePanel):

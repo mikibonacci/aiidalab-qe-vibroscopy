@@ -9,7 +9,7 @@ Authors:
 import ipywidgets as ipw
 from aiida.orm import Float, Int, Str
 
-from aiidalab_qe.panel import Panel
+from aiidalab_qe.common.panel import Panel
 from aiida_vibroscopy.common.properties import PhononProperty
 
 

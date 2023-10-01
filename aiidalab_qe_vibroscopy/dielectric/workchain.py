@@ -1,10 +1,8 @@
 from aiida.orm import load_code, Str
 from aiida.plugins import WorkflowFactory
-
-from aiida_vibroscopy.common.properties import PhononProperty
+from aiida_quantumespresso.common.types import ElectronicType, SpinType
 
 DielectricWorkChain = WorkflowFactory("vibroscopy.dielectric")
-
 
 '''
 The logic is that HarmonicWorkchain can run PhononWorkchain and DielectricWorkchain, skipping the second
@@ -12,8 +10,8 @@ but not the first: so we add also the possibility to run only DielectricWorkchai
 '''
 
 def get_builder(codes, structure, parameters):
-    protocol = parameters["basic"].pop("protocol", "fast")
-    pw_code = load_code(codes.get("pw_code"))
+    protocol = parameters["workchain"].pop("protocol", "fast")
+    pw_code = codes.get("pw")
     dielectric_property = parameters["dielectric"].pop("dielectric_property", "none")
 
     '''
@@ -25,19 +23,18 @@ def get_builder(codes, structure, parameters):
     if dielectric_property == "none": dielectric_property = "dielectric"
 
     overrides = {
-        "scf": parameters["advance"],
+        "scf": parameters["advanced"],
         "property":dielectric_property,
     }
-    
-    parameters = parameters["basic"]
-    
-
+        
     builder = DielectricWorkChain.get_builder_from_protocol(
         code=pw_code,
         structure=structure,
         protocol=protocol,
         overrides=overrides,
-        **parameters,
+        electronic_type=ElectronicType(parameters["workchain"]["electronic_type"]),
+        spin_type=SpinType(parameters["workchain"]["spin_type"]),
+        initial_magnetic_moments=parameters["advanced"]["initial_magnetic_moments"],
     )
 
     builder.pop("clean_workdir", None)
@@ -45,4 +42,8 @@ def get_builder(codes, structure, parameters):
     
     return builder
 
-workchain_and_builder = [DielectricWorkChain, get_builder]
+workchain_and_builder = {
+    "workchain": DielectricWorkChain,
+    "exclude": ("clean_workdir",),
+    "get_builder": get_builder,
+}

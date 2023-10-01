@@ -1,24 +1,25 @@
 from aiida.orm import load_code
 from aiida.plugins import WorkflowFactory
-
+from aiida_quantumespresso.common.types import ElectronicType, SpinType
 from aiida_vibroscopy.common.properties import PhononProperty
 
 PhononWorkChain = WorkflowFactory("vibroscopy.phonons.phonon")
 
-
 def get_builder(codes, structure, parameters):
-    protocol = parameters["basic"].pop("protocol", "fast")
-    pw_code = load_code(codes.get("pw_code"))
-    phonopy_code = load_code(codes.get("phonopy_code"))
+    from copy import deepcopy
+    
+    pw_code = codes.get("pw")
+    phonopy_code = codes.get("phonopy", None)
     phonon_property = PhononProperty[parameters["phonons"]["phonon_property"]]
-
+    protocol = parameters["workchain"].pop("protocol", "fast")
+    
+    scf_overrides = deepcopy(parameters["advanced"])
     overrides = {
         "phonon":{
-            "scf": parameters["advance"],
+            "scf": scf_overrides,
         },
     }
     
-    parameters = parameters["basic"]
     builder = PhononWorkChain.get_builder_from_protocol(
         pw_code=pw_code,
         phonopy_code=phonopy_code,
@@ -26,7 +27,9 @@ def get_builder(codes, structure, parameters):
         protocol=protocol,
         overrides=overrides,
         phonon_property=phonon_property,
-        **parameters,
+        electronic_type=ElectronicType(parameters["workchain"]["electronic_type"]),
+        spin_type=SpinType(parameters["workchain"]["spin_type"]),
+        initial_magnetic_moments=parameters["advanced"]["initial_magnetic_moments"],
     )
     
     # MB supposes phonopy will always run serially, otherwise choose phono3py 
@@ -38,4 +41,9 @@ def get_builder(codes, structure, parameters):
     
     return builder
 
-workchain_and_builder = [PhononWorkChain, get_builder]
+
+workchain_and_builder = {
+    "workchain": PhononWorkChain,
+    "exclude": ("clean_workdir",),
+    "get_builder": get_builder,
+}

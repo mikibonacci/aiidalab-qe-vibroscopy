@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Panel for PhononWorkchain plugin.
+"""Setting Panel for PhononWorkchain plugin.
 
 Authors:
 
@@ -7,9 +7,8 @@ Authors:
     Inspired by Xing Wang <xing.wang@psi.ch>
 """
 import ipywidgets as ipw
-from aiida.orm import Float, Int, Str
 
-from aiidalab_qe.panel import Panel
+from aiidalab_qe.common.panel import Panel
 from aiida_vibroscopy.common.properties import PhononProperty
 
 
@@ -23,7 +22,7 @@ class Setting(Panel):
         )
         self.settings_help = ipw.HTML(
             """<div style="line-height: 140%; padding-top: 0px; padding-bottom: 5px">
-            Please set the phononic property to be computed in the simulation.
+            Please select the phonon property to be computed in the simulation.
             </div>"""
         )
         self.workchain_protocol = ipw.ToggleButtons(
@@ -39,7 +38,7 @@ class Setting(Panel):
                 ["force constants","NONE"],
             ],
             value="BANDS",
-            description="Desired phononic property:",
+            description="Phonon property:",
             disabled=False,
             style={"description_width": "initial"},
         )
@@ -53,12 +52,15 @@ class Setting(Panel):
 
     def get_panel_value(self):
         """Return a dictionary with the input parameters for the plugin."""
-        parameters = {
-            "phonon_property": self.phonon_property.value,
-        }
-
-        return parameters
+        if isinstance(self.phonon_property,str):
+            return {
+            "phonon_property": self.phonon_property,
+            }
+        else:
+            return {
+                "phonon_property": self.phonon_property.value,
+            }
 
     def load_panel_value(self, input_dict):
         """Load a dictionary with the input parameters for the plugin."""
-        self.phonon_property.value = input_dict.get("phonon_property")
+        self.phonon_property.value = input_dict.get("phonon_property", "BANDS")

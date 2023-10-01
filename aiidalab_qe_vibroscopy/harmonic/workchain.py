@@ -1,28 +1,28 @@
 from aiida.orm import load_code, Dict
 from aiida.plugins import WorkflowFactory
+from aiida_quantumespresso.common.types import ElectronicType, SpinType
 
 from aiida_vibroscopy.common.properties import PhononProperty
 
 HarmonicWorkChain = WorkflowFactory("vibroscopy.phonons.harmonic")
 
 def get_builder(codes, structure, parameters):
-    protocol = parameters["basic"].pop("protocol", "fast")
-    pw_code = load_code(codes.get("pw_code"))
-    phonopy_code = load_code(codes.get("phonopy_code"))
+    protocol = parameters["workchain"].pop("protocol", "fast")
+    pw_code = load_code(codes.get("pw"))
+    phonopy_code = load_code(codes.get("phonopy"))
     phonon_property = PhononProperty[parameters["phonons"].pop("phonon_property","NONE")]
     dielectric_property = parameters["dielectric"].pop("dielectric_property", "dielectric")
 
     overrides = {
         "phonon":{
-            "scf": parameters["advance"],
+            "scf": parameters["advanced"],
         },
         "dielectric":{
-            "scf": parameters["advance"],
+            "scf": parameters["advanced"],
             "property":dielectric_property,
         },
     }
     
-    parameters = parameters["basic"]
     builder = HarmonicWorkChain.get_builder_from_protocol(
         pw_code=pw_code,
         phonopy_code=phonopy_code,
@@ -30,8 +30,9 @@ def get_builder(codes, structure, parameters):
         protocol=protocol,
         overrides=overrides,
         phonon_property=phonon_property,
-        **parameters,
-    )
+        electronic_type=ElectronicType(parameters["workchain"]["electronic_type"]),
+        spin_type=SpinType(parameters["workchain"]["spin_type"]),
+        initial_magnetic_moments=parameters["advanced"]["initial_magnetic_moments"],    )
     
     # MB supposes phonopy will always run serially, otherwise choose phono3py 
     # also this is needed to be set here.
@@ -49,4 +50,8 @@ def get_builder(codes, structure, parameters):
 
     return builder
 
-workchain_and_builder = [HarmonicWorkChain, get_builder]
+workchain_and_builder = {
+    "workchain": HarmonicWorkChain,
+    "exclude": ("clean_workdir",),
+    "get_builder": get_builder,
+}
