@@ -22,7 +22,7 @@ setup(
     entry_points={
         "aiidalab_qe.properties": [
             "harmonic = aiidalab_qe_vibroscopy.harmonic:property",
-            #"iraman = aiidalab_qe_vibroscopy.raman:property",
+            "iraman = aiidalab_qe_vibroscopy.raman:property",
             "dielectric = aiidalab_qe_vibroscopy.dielectric:property",
             "phonons = aiidalab_qe_vibroscopy.phonons:property",
         ],

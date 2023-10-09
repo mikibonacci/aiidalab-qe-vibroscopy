@@ -21,17 +21,18 @@ def export_phononworkchain_data(node, fermi_energy=None):
     from monty.json import jsanitize
 
     parameters={}
-    if "output_phonopy" in node.outputs.phonons:
-        if "phonon_bands" in node.outputs.phonons.output_phonopy:
+
+    if "output_phonopy" in node.outputs.harmonic:
+        if "phonon_bands" in node.outputs.harmonic.output_phonopy:
             data = json.loads(
-                node.outputs.phonons.output_phonopy.phonon_bands._exportcontent("json", comments=False)[0]
+                node.outputs.harmonic.output_phonopy.phonon_bands._exportcontent("json", comments=False)[0]
             )
             # The fermi energy from band calculation is not robust.
             '''data["fermi_level"] = (
                 fermi_energy or node.outputs.phonons.band_parameters["fermi_energy"]
             )'''
             #to be optimized: use the above results!!!
-            bands = node.outputs.phonons.output_phonopy.phonon_bands.get_bands()
+            bands = node.outputs.harmonic.output_phonopy.phonon_bands.get_bands()
             data["fermi_level"] = 0
             data["Y_label"] = "Dispersion (THz)"
             
@@ -45,9 +46,9 @@ def export_phononworkchain_data(node, fermi_energy=None):
             return [
                 jsanitize(data),parameters,'bands'
             ]
-        elif "total_phonon_dos" in node.outputs.phonons.output_phonopy:
-            what, energy_dos, units_omega = node.outputs.phonons.output_phonopy.total_phonon_dos.get_x()
-            dos_name, dos_data, units_dos = node.outputs.phonons.output_phonopy.total_phonon_dos.get_y()[0]
+        elif "total_phonon_dos" in node.outputs.harmonic.output_phonopy:
+            what, energy_dos, units_omega = node.outputs.harmonic.output_phonopy.total_phonon_dos.get_x()
+            dos_name, dos_data, units_dos = node.outputs.harmonic.output_phonopy.total_phonon_dos.get_y()[0]
             dos = []
             # The total dos parsed
             tdos = {
@@ -71,11 +72,11 @@ def export_phononworkchain_data(node, fermi_energy=None):
             return [
                     json.loads(json.dumps(data_dict)),parameters,'dos'
                 ]
-        elif "thermal_properties" in node.outputs.phonons.output_phonopy:
-            what, T, units_k = node.outputs.phonons.output_phonopy.thermal_properties.get_x()
-            F_name, F_data, units_F = node.outputs.phonons.output_phonopy.thermal_properties.get_y()[0]
-            Entropy_name, Entropy_data, units_entropy = node.outputs.phonons.output_phonopy.thermal_properties.get_y()[1]
-            Cv_name, Cv_data, units_Cv = node.outputs.phonons.output_phonopy.thermal_properties.get_y()[2]
+        elif "thermal_properties" in node.outputs.harmonic.output_phonopy:
+            what, T, units_k = node.outputs.harmonic.output_phonopy.thermal_properties.get_x()
+            F_name, F_data, units_F = node.outputs.harmonic.output_phonopy.thermal_properties.get_y()[0]
+            Entropy_name, Entropy_data, units_entropy = node.outputs.harmonic.output_phonopy.thermal_properties.get_y()[1]
+            Cv_name, Cv_data, units_Cv = node.outputs.harmonic.output_phonopy.thermal_properties.get_y()[2]
 
             return [T, F_data, units_F, Entropy_data, units_entropy, Cv_data, units_Cv],[],"thermal"
         

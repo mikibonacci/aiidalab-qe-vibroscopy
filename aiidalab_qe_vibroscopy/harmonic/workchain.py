@@ -6,23 +6,36 @@ from aiida_vibroscopy.common.properties import PhononProperty
 
 HarmonicWorkChain = WorkflowFactory("vibroscopy.phonons.harmonic")
 
-def get_builder(codes, structure, parameters):
-    protocol = parameters["workchain"].pop("protocol", "fast")
-    pw_code = load_code(codes.get("pw"))
-    phonopy_code = load_code(codes.get("phonopy"))
-    phonon_property = PhononProperty[parameters["phonons"].pop("phonon_property","NONE")]
-    dielectric_property = parameters["dielectric"].pop("dielectric_property", "dielectric")
+'''
+The logic is that HarmonicWorkchain can run PhononWorkchain and DielectricWorkchain, skipping the second
+but not the firstfor now we do not support to run only DielectricWorkchain.
+'''
 
+def get_builder(codes, structure, parameters):
+    from copy import deepcopy
+    protocol = parameters["workchain"].pop("protocol", "fast")
+    pw_code = codes.get("pw")
+    phonopy_code = codes.get("phonopy")
+    phonon_property = PhononProperty[parameters["harmonic"].pop("phonon_property","none")]
+    supercell_matrix = parameters["harmonic"].pop("supercell_selector",None)
+    dielectric_property = parameters["harmonic"].pop("dielectric_property", "none")
+    polar = parameters["harmonic"].pop("material_is_polar", "off")
+
+    if polar == "on": dielectric_property = "raman"
+    
+    scf_overrides = deepcopy(parameters["advanced"])
     overrides = {
         "phonon":{
-            "scf": parameters["advanced"],
+            "scf": scf_overrides,
+            "supercell_matrix":supercell_matrix,
         },
         "dielectric":{
-            "scf": parameters["advanced"],
-            "property":dielectric_property,
+            "scf": scf_overrides,
+            "property":dielectric_property
         },
     }
     
+
     builder = HarmonicWorkChain.get_builder_from_protocol(
         pw_code=pw_code,
         phonopy_code=phonopy_code,
@@ -47,8 +60,29 @@ def get_builder(codes, structure, parameters):
     builder.phonon.phonopy.parameters = Dict(dict={})
     builder.phonopy.parameters = builder.phonon.phonopy.parameters
     builder.phonon.phonopy.code = builder.phonopy.code
+    
+    builder.phonopy.parameters = Dict(dict=phonon_property.value)
 
     return builder
+
+def trigger_workchain(name, parameters):
+    if name not in ["harmonic","phonons","dielectric","iraman"]: return True
+    import copy
+    parameters_ = copy.deepcopy(parameters)
+    harmonic_params = parameters_.pop("harmonic",{})
+    phonon_property = harmonic_params.pop("phonon_property", "none")
+    dielectric_property = harmonic_params.pop("dielectric_property", "none")
+    polar = harmonic_params.pop("material_is_polar", "off")
+    
+    trigger_spectrum =  parameters_.pop("iraman",{}).pop("spectrum", False)
+    
+    trigger_harmonic = (polar == "on" or (phonon_property != "none" and dielectric_property != "none")) and not trigger_spectrum
+    trigger_phonons = (phonon_property != "none" and dielectric_property == "none" and not trigger_harmonic) and not trigger_spectrum
+    trigger_dielectric = (phonon_property == "none" and dielectric_property != "none" and not trigger_harmonic) and not trigger_spectrum
+    
+    trigger = {'iraman':trigger_spectrum,'harmonic':trigger_harmonic,'phonons':trigger_phonons,'dielectric':trigger_dielectric,}
+    
+    return trigger[name]
 
 workchain_and_builder = {
     "workchain": HarmonicWorkChain,

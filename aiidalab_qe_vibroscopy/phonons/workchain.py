@@ -7,17 +7,15 @@ PhononWorkChain = WorkflowFactory("vibroscopy.phonons.phonon")
 
 def get_builder(codes, structure, parameters):
     from copy import deepcopy
-    
     pw_code = codes.get("pw")
     phonopy_code = codes.get("phonopy", None)
-    phonon_property = PhononProperty[parameters["phonons"]["phonon_property"]]
+    phonon_property = PhononProperty[parameters["harmonic"].pop("phonon_property","none")]
+    supercell_matrix = parameters["harmonic"].pop("supercell_selector",None)
     protocol = parameters["workchain"].pop("protocol", "fast")
-    
     scf_overrides = deepcopy(parameters["advanced"])
     overrides = {
-        "phonon":{
-            "scf": scf_overrides,
-        },
+        "scf": scf_overrides,
+        "supercell_matrix":supercell_matrix,
     }
     
     builder = PhononWorkChain.get_builder_from_protocol(

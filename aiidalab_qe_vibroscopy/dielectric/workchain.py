@@ -12,7 +12,7 @@ but not the first: so we add also the possibility to run only DielectricWorkchai
 def get_builder(codes, structure, parameters):
     protocol = parameters["workchain"].pop("protocol", "fast")
     pw_code = codes.get("pw")
-    dielectric_property = parameters["dielectric"].pop("dielectric_property", "none")
+    dielectric_property = parameters["harmonic"].pop("dielectric_property", "none")
 
     '''
     here we set a readable input anyway, even if we do not run this workflow 
@@ -24,7 +24,6 @@ def get_builder(codes, structure, parameters):
 
     overrides = {
         "scf": parameters["advanced"],
-        "property":dielectric_property,
     }
         
     builder = DielectricWorkChain.get_builder_from_protocol(
@@ -37,6 +36,8 @@ def get_builder(codes, structure, parameters):
         initial_magnetic_moments=parameters["advanced"]["initial_magnetic_moments"],
     )
 
+    builder.property = dielectric_property
+    
     builder.pop("clean_workdir", None)
 
     
