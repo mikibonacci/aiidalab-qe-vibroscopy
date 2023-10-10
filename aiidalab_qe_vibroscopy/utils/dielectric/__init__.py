@@ -1,7 +1,7 @@
 #from aiidalab_qe_vibroscopy.dielectric.settings import Setting
-from aiidalab_qe_vibroscopy.harmonic.settings import Setting
+#from aiidalab_qe_vibroscopy.harmonic.settings import Setting
 import ipywidgets as ipw
-from aiidalab_qe_vibroscopy.dielectric.workchain import workchain_and_builder
+#from aiidalab_qe_vibroscopy.dielectric.workchain import workchain_and_builder
 #from aiidalab_qe_vibroscopy.dielectric.result import Result
 from aiidalab_qe.common.panel import OutlinePanel
 
@@ -16,6 +16,6 @@ class Outline(OutlinePanel):
 property ={
 "outline": Outline,
 #"setting": Setting,
-"workchain": workchain_and_builder,
+#"workchain": workchain_and_builder,
 #"result": Result,
 }

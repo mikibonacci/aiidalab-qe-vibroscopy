@@ -11,7 +11,9 @@ def get_builder(codes, structure, parameters):
     pw_code = codes.get("pw")
     phonopy_code = codes.get("phonopy")
     
-    phonon_property = PhononProperty[parameters["vibronic"].pop("phonon_property","none")]
+    phonon_property = parameters["vibronic"].pop("phonon_property","none")
+    if phonon_property!="none":
+        phonon_property = PhononProperty[phonon_property]
     polar = parameters["vibronic"].pop("material_is_polar", "off")
     supercell_matrix = parameters["vibronic"].pop("supercell_selector",None)
         
@@ -25,7 +27,7 @@ def get_builder(codes, structure, parameters):
         trigger = "iraman"
         dielectric_property = spectrum
         
-    if polar and trigger == "phonon":
+    if polar=="on" and trigger == "phonon":
         #the material is polar, so we need to run HarmonicWChain instead of PhononWChain.
         trigger = "harmonic"
         dielectric_property = "raman"

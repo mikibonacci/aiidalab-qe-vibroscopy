@@ -138,16 +138,16 @@ class VibroWorkChain(WorkChain):
                 phonon_property=phonon_property,
                 **kwargs
             )
+            
+            builder_phonon.phonopy.metadata.options.resources = {
+                "num_machines": 1,
+                "num_mpiprocs_per_machine": 1,
+            }
 
             #MBO: I do not understand why I have to do this, but it works
             symmetry = builder_phonon.pop('symmetry')
             builder.phonon = builder_phonon
             builder.phonon.symmetry = symmetry
-            
-            builder.phonon.phonopy.metadata.options.resources = {
-                "num_machines": 1,
-                "num_mpiprocs_per_machine": 1,
-            }
         
         elif trigger == "dielectric":
             builder_dielectric = DielectricWorkChain.get_builder_from_protocol(
@@ -227,27 +227,28 @@ class VibroWorkChain(WorkChain):
         if "phonon" in self.inputs:
             self.ctx.key = "phonon"
             self.ctx.workchain = PhononWorkChain
-            self.inputs.scf.pw.structure = self.inputs.structure
         elif "dielectric" in self.inputs:
             self.ctx.key = "dielectric"
             self.ctx.workchain = DielectricWorkChain
-            self.inputs.scf.pw.structure = self.inputs.structure
         elif "harmonic" in self.inputs:
             self.ctx.key = "harmonic"
             self.ctx.workchain = HarmonicWorkChain
-            self.inputs.structure = self.inputs.structure
         elif "iraman" in self.inputs:
             self.ctx.key = "iraman"
             self.ctx.workchain = IRamanSpectraWorkChain
-            self.inputs.structure = self.inputs.structure
+            
+        self.ctx.structure = self.inputs.structure
 
     
     def vibrate(self):
         """Run a WorkChain for vibrational properties."""
         #maybe we can unify this, thanks to a wise setup.
         inputs = AttributeDict(self.exposed_inputs(self.ctx.workchain, namespace=self.ctx.key))
-        #inputs.scf.pw.structure = self.inputs.structure
         inputs.metadata.call_link_label = self.ctx.key
+        if self.ctx.key in ["phonon","dielectric"]:
+            inputs.scf.pw.structure = self.ctx.structure
+        else:
+            inputs.structure = self.ctx.structure
 
         future = self.submit(self.ctx.workchain, **inputs)
         self.report(f'submitting `WorkChain` <PK={future.pk}>')

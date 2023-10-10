@@ -47,10 +47,16 @@ def export_iramanworkchain_data(node):
     from monty.json import jsanitize
 
     parameters={}
+    
+    if not "vibronic" in node.outputs:
+        return None
+    else:
+        if not "iraman" in node.outputs.vibronic:
+            return None
 
-    if "vibrational_data" in node.outputs.iraman:
+    if "vibrational_data" in node.outputs.vibronic.iraman:
         
-        vibro = node.outputs.iraman.vibrational_data.numerical_accuracy_4
+        vibro = node.outputs.vibronic.iraman.vibrational_data.numerical_accuracy_4
         
         try:
             #if node.inputs.iraman.dielectric.property == "ir":
