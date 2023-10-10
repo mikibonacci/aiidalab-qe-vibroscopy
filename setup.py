@@ -21,10 +21,14 @@ setup(
     packages=find_packages(),
     entry_points={
         "aiidalab_qe.properties": [
-            "harmonic = aiidalab_qe_vibroscopy.harmonic:property",
-            "iraman = aiidalab_qe_vibroscopy.raman:property",
-            "dielectric = aiidalab_qe_vibroscopy.dielectric:property",
-            "phonons = aiidalab_qe_vibroscopy.phonons:property",
+            #"harmonic = aiidalab_qe_vibroscopy.harmonic:property",
+            #"iraman = aiidalab_qe_vibroscopy.raman:property",
+            #"dielectric = aiidalab_qe_vibroscopy.dielectric:property",
+            #"phonons = aiidalab_qe_vibroscopy.phonons:property",
+            "vibronic = aiidalab_qe_vibroscopy.workflows:property",
+        ],
+        "aiida.workflows": [
+            "vibroscopy_app.vibro = aiidalab_qe_vibroscopy.workflows.vibroworkchain:VibroWorkChain",
         ],
     },
     install_requires=[],
