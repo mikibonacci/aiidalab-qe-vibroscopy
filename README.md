@@ -3,7 +3,7 @@ Plugin to compute vibrational properties of materials via the aiida-vibroscopy A
 
 ## Installation
 
-In order to load this plugin into QeApp, you need to switch to the `use_plugin` branch for your `aiidalab-qe`.
+In order to load this plugin into QeApp, you need to switch to the `features/phonopy` branch for your `aiidalab-qe`.
 
 Then, install this plugin by:
 
