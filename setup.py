@@ -31,7 +31,10 @@ setup(
             "vibroscopy_app.vibro = aiidalab_qe_vibroscopy.workflows.vibroworkchain:VibroWorkChain",
         ],
     },
-    install_requires=[],
+    install_requires=[
+        "aiida-vibroscopy>=1.0.2",
+        "aiida-phonopy>=1.1.3",
+    ],
     package_data={},
     python_requires=">=3.6",
 )
