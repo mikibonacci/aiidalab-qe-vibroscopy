@@ -1,5 +1,10 @@
 import pathlib
 from setuptools import setup, find_packages
+from aiida.common.exceptions import NotExistent
+from subprocess import run
+from aiida.orm import load_code
+from aiida import load_profile
+from setuptools.command.install import install
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
@@ -7,6 +12,37 @@ HERE = pathlib.Path(__file__).parent
 # The text of the README file
 README = (HERE / "README.md").read_text()
 
+
+class CustomInstallCommand(install):
+    def run(self):
+        load_profile()
+        try:
+            load_code("phonopy@localhost")
+        except NotExistent:
+            run(
+                [
+                    "verdi",
+                    "code",
+                    "create",
+                    "core.code.installed",
+                    "--non-interactive",
+                    "--label",
+                    "phonopy",
+                    "--description",
+                    "phonopy setup by AiiDAlab.",
+                    "--default-calc-job-plugin",
+                    "phonopy.phonopy",
+                    "--computer",
+                    "localhost",
+                    "--filepath-executable",
+                    "/opt/conda/bin/phonopy",
+                ],
+                check=True,
+                capture_output=True,
+            )
+        else:
+            raise RuntimeError(f"Code phonopy is already set up!")
+        super().run()
 
 setup(
     name="aiidalab-qe-vibroscopy",
@@ -34,7 +70,11 @@ setup(
     install_requires=[
         "aiida-vibroscopy>=1.0.2",
         "aiida-phonopy>=1.1.3",
+        "phonopy"
     ],
+    cmdclass={
+        'install': CustomInstallCommand,
+    },
     package_data={},
     python_requires=">=3.6",
 )
