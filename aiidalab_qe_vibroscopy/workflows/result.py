@@ -13,7 +13,7 @@ import numpy as np
 from ..utils.raman.result import export_iramanworkchain_data
 from ..utils.harmonic.result import export_phononworkchain_data
 import ipywidgets as ipw
-
+from ..utils.raman.result import SpectrumPlotWidget
 class Result(ResultPanel):
 
     title = "Vibrational Structure"
@@ -45,27 +45,14 @@ class Result(ResultPanel):
             table_html += "</table>"
 
             active_modes = ipw.VBox([ipw.HTML(value="<b> Raman Active Modes </b>"),ipw.HTML(value=table_html)])
+
+            spectrum_widget = SpectrumPlotWidget(self.node)
             
             if spectra_data[3] in ["Raman vibrational spectrum","Infrared vibrational spectrum"]:
-                import plotly.graph_objects as go
-
-                frequencies = spectra_data[1]
-                total_intensities = spectra_data[0]
                 
-                g = go.FigureWidget(
-                    layout=go.Layout(
-                        title=dict(text=spectra_data[3]),
-                        barmode="overlay",
-                    )
-                )
-                g.layout.xaxis.title = "Wavenumber (cm-1)"
-                g.layout.yaxis.title = "Intensity (arb. units)"
-                g.layout.xaxis.nticks = 0 
-                g.add_scatter(x=frequencies,y=total_intensities,name=f"")
 
-                
                 self.children=[
-                    ipw.HBox([active_modes, g])
+                    ipw.HBox([spectrum_widget, active_modes ])
                 ]
         
         if phonon_data:    
