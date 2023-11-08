@@ -62,6 +62,7 @@ def get_builder(codes, structure, parameters):
         spin_type=SpinType(parameters["workchain"]["spin_type"]),
         initial_magnetic_moments=parameters["advanced"]["initial_magnetic_moments"],
         )
+    
 
     return builder
 
