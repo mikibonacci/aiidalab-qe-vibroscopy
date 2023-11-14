@@ -324,10 +324,13 @@ class ActiveModesWidget(ipw.VBox):
         #StructureData
         self.structure_ase = self.node.inputs.structure.get_ase()
 
+        self.ngl = nv.NGLWidget()
+        
+        modes_values = [f"{index + 1}: {value}" for index, value in enumerate(self.rounded_frequencies)]
         # Create Raman modes widget
         self.active_modes = ipw.Dropdown(
-            options=self.rounded_frequencies,
-            value=self.rounded_frequencies[0],  # Default value
+            options= modes_values,
+            value=modes_values[0],  # Default value
             description='Select mode:',
             style={"description_width": "initial"},
         )
@@ -401,7 +404,8 @@ class ActiveModesWidget(ipw.VBox):
     def _animation_widget(self):
         """Create animation widget."""
         # Get the index of the selected mode
-        index = self.rounded_frequencies.index(self.active_modes.value)
+        index_str = self.active_modes.value.split(":")[0]
+        index = int(index_str) - 1
         # Get the eigenvector of the selected mode
         eigenvector = self.eigenvectors[index]
         # Get the amplitude of the selected mode
@@ -421,12 +425,14 @@ class ActiveModesWidget(ipw.VBox):
             supercell = vibro_atoms.repeat((self._supercell[0].value, self._supercell[1].value, self._supercell[2].value))
             traj.append(supercell)
         # Create the animation widget
-        ngl = nv.show_asetraj(traj)
-        ngl.add_unitcell()
+        self.ngl.clear()
+        self.ngl = nv.show_asetraj(traj) 
+        self.ngl.add_unitcell()
         #Make the animation to be set in a loop
-        ngl._iplayer.children[0]._playing = True
-        ngl._iplayer.children[0]._repeat = True
-        ngl._set_size("400px", "400px")
-        ngl.center()
-        self.ngl = ngl
+        self.ngl._iplayer.children[0]._playing = False
+        self.ngl._iplayer.children[0]._playing = True
+        self.ngl._iplayer.children[0]._repeat = True
+        self.ngl._set_size("400px", "400px")
+        self.ngl.center()
+    
     
