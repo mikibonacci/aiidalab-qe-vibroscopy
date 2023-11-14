@@ -336,7 +336,7 @@ class ActiveModesWidget(ipw.VBox):
         )
 
         self.amplitude = ipw.FloatText(
-            value=0.5,
+            value=3.0,
             description="Amplitude :",
             disabled=False,
             style={"description_width": "initial"},
