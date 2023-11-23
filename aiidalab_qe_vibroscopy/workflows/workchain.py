@@ -12,8 +12,9 @@ def get_builder(codes, structure, parameters):
     phonopy_code = codes.get("phonopy")
     
     phonon_property = parameters["vibronic"].pop("phonon_property","none")
-    if phonon_property!="none":
-        phonon_property = PhononProperty[phonon_property]
+    if phonon_property in ["none","NONE"]:
+        phonon_property = PhononProperty.NONE
+
     polar = parameters["vibronic"].pop("material_is_polar", "off")
     supercell_matrix = parameters["vibronic"].pop("supercell_selector",None)
         
