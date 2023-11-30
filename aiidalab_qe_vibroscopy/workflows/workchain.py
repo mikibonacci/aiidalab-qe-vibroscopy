@@ -2,6 +2,7 @@ from aiida.orm import load_code, Dict
 from aiida.plugins import WorkflowFactory
 from aiida_quantumespresso.common.types import ElectronicType, SpinType
 from aiida_vibroscopy.common.properties import PhononProperty
+from aiida_quantumespresso.workflows.pw.bands import PwBaseWorkChain
 
 VibroWorkChain = WorkflowFactory("vibroscopy_app.vibro")
 
@@ -55,6 +56,12 @@ def get_builder(codes, structure, parameters):
         "dielectric": {"scf": scf_overrides, "property": dielectric_property},
     }
 
+    #Only for 2D and 1D materials
+    if structure.pbc != (True, True, True):
+        if "kpoints_distance" not in parameters["advanced"]:
+            overrides["dielectric"]["scf"]["kpoints_distance"] = PwBaseWorkChain.get_protocol_inputs(protocol)["kpoints_distance"]
+
+    
     builder = VibroWorkChain.get_builder_from_protocol(
         pw_code=pw_code,
         phonopy_code=phonopy_code,
@@ -67,10 +74,10 @@ def get_builder(codes, structure, parameters):
         electronic_type=ElectronicType(parameters["workchain"]["electronic_type"]),
         spin_type=SpinType(parameters["workchain"]["spin_type"]),
         initial_magnetic_moments=parameters["advanced"]["initial_magnetic_moments"],
-    )
+        )
+
 
     return builder
-
 
 workchain_and_builder = {
     "workchain": VibroWorkChain,
