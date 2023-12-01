@@ -31,7 +31,7 @@ class Result(ResultPanel):
             if isinstance(spectra_data,str):
                 #No Modes are detected. So we explain why
                 no_mode_widget = ipw.HTML(spectra_data)
-                explanation_widget = ipw.HTML("This may be due to the fact that the current implementation of *aiida-vibroscopy* only considers first-order effects.")
+                explanation_widget = ipw.HTML("This may be due to the fact that the current implementation of aiida-vibroscopy plugin only considers first-order effects.")
                 
                 self.children=[
                     ipw.VBox([no_mode_widget, explanation_widget])
