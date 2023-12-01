@@ -65,19 +65,27 @@ def export_iramanworkchain_data(node):
         
         vibro = node.outputs.vibronic.iraman.vibrational_data.numerical_accuracy_4
         
-        try:
-            #if node.inputs.iraman.dielectric.property == "ir":
+        if node.inputs.iraman.dielectric.property == "ir":
             polarized_intensities, frequencies, labels = vibro.run_powder_ir_intensities(frequency_laser=532, temperature=300)
             total_intensities =  polarized_intensities 
+            
+            #sometimes IR/Raman has not active peaks by symmetry, or due to the fact that 1st order cannot capture them
+            if len(total_intensities) == 0:
+                return "No IR modes detected." #explanation added in the main results script of the app.
+            
             frequencies, total_intensities = plot_powder(frequencies, total_intensities)
 
             return [
                 total_intensities,frequencies,labels,'Infrared vibrational spectrum'
             ]
-        except:
-            #elif node.inputs.iraman.dielectric.property == "raman":
+        elif node.inputs.iraman.dielectric.property == "raman":
             polarized_intensities, depolarized_intensities, frequencies, labels = vibro.run_powder_raman_intensities(frequency_laser=532, temperature=300)
             total_intensities =  polarized_intensities + depolarized_intensities
+            
+            #sometimes IR/Raman has not active peaks by symmetry, or due to the fact that 1st order cannot capture them
+            if len(total_intensities) == 0:
+                return "No Raman modes detected." #explanation added in the main results script of the app.
+            
             frequencies, total_intensities = plot_powder(frequencies, total_intensities)
             return [
                 total_intensities,frequencies,labels,'Raman vibrational spectrum'
