@@ -8,8 +8,10 @@ Authors:
 """
 import ipywidgets as ipw
 from aiida.orm import Float, Int, Str
+import traitlets as tl
 
 from aiidalab_qe.common.panel import Panel
+
 
 class Setting(Panel):
     title = "Vibrational Settings"
@@ -25,46 +27,46 @@ class Setting(Panel):
             supercell size of 2x2x2 is at convergence with respect to finite atomic displacement in the unit cell.
             </div>"""
         )
-        
+
         self.polar_help = ipw.HTML(
             """<div style="line-height: 140%; padding-top: 5px; padding-bottom: 5px">
-            If the material is polar, more 
+            If the material is polar, more
             accurate phonon properties interpolation is performed.
             </div>"""
         )
-        
+
         self.workchain_protocol = ipw.ToggleButtons(
             options=["fast", "moderate", "precise"],
             value="moderate",
         )
-        
-        #I want to be able to select more than only one... this has to change at the PhononWorkChain level.
+
+        # I want to be able to select more than only one... this has to change at the PhononWorkChain level.
         self.phonon_property_ = ipw.Dropdown(
             options=[
-                ["band structure","BANDS"], 
-                ["density of states (DOS)","DOS"], 
-                ["thermal properties","THERMODYNAMIC"],
-                ["force constants","NONE"],
-                ["none","none"]
+                ["band structure", "BANDS"],
+                ["density of states (DOS)", "DOS"],
+                ["thermal properties", "THERMODYNAMIC"],
+                ["force constants", "NONE"],
+                ["none", "none"],
             ],
             value="none",
             description="Phonon property:",
             disabled=False,
             style={"description_width": "initial"},
         )
-        
+
         self.dielectric_property_ = ipw.Dropdown(
             options=[
-                ["dielectric tensor","dielectric"], 
-                ["infrared","ir"], 
-                ["raman",'raman'], 
-                ['born-charges',"born-charges"], 
-                #'nac', 
-                #'bec', 
+                ["dielectric tensor", "dielectric"],
+                ["infrared", "ir"],
+                ["raman", "raman"],
+                ["born-charges", "born-charges"],
+                #'nac',
+                #'bec',
                 #'susceptibility-derivative',
                 #'non-linear-susceptibility',
-                ['none','none'],
-                ],
+                ["none", "none"],
+            ],
             value="none",
             description="Dielectric property:",
             disabled=False,
@@ -72,38 +74,56 @@ class Setting(Panel):
         )
 
         self.spectrum_ = ipw.ToggleButtons(
-            options=[("Off","off"),("Infrared", "ir"), ("Raman", "raman")],
+            options=[("Off", "off"), ("Infrared", "ir"), ("Raman", "raman")],
             value="off",
             style={"description_width": "initial"},
         )
-        
-        #start Supercell
-        self.supercell=[2,2,2]
+
+        self.spectrum_.observe(self._onclick_spectrum_choice, "value")
+
+        # start Supercell
+        self.supercell = [2, 2, 2]
+
         def change_supercell(_=None):
             self.supercell = [
                 self._sc_x.value,
                 self._sc_y.value,
                 self._sc_z.value,
             ]
-            
-        for elem in ["x","y","z"]:
-            setattr(self,"_sc_"+elem,ipw.BoundedIntText(value=2, min=1, layout={"width": "40px"},disabled=False))
-        
-        for elem in [self._sc_x,self._sc_y,self._sc_z]:
+
+        for elem in ["x", "y", "z"]:
+            setattr(
+                self,
+                "_sc_" + elem,
+                ipw.BoundedIntText(
+                    value=2, min=1, layout={"width": "40px"}, disabled=False
+                ),
+            )
+
+        for elem in [self._sc_x, self._sc_y, self._sc_z]:
             elem.observe(change_supercell, names="value")
-            
+
         self.supercell_selector = ipw.HBox(
-            children=[ipw.HTML(description="Supercell size:",style={"description_width": "initial"})] + [
-                self._sc_x,self._sc_y,self._sc_z,], 
+            children=[
+                ipw.HTML(
+                    description="Supercell size:",
+                    style={"description_width": "initial"},
+                )
+            ]
+            + [
+                self._sc_x,
+                self._sc_y,
+                self._sc_z,
+            ],
         )
-                    
+
         self.supercell_widget = ipw.HBox(
             [self.supercell_selector],
             layout=ipw.Layout(justify_content="flex-start"),
         )
-        #end Supercell.
-         
-        #to trigger Dielectric property = Raman... FOR POLAR MATERIALS. 
+        # end Supercell.
+
+        # to trigger Dielectric property = Raman... FOR POLAR MATERIALS.
         self.material_is_polar_ = ipw.ToggleButtons(
             options=[("Off", "off"), ("On", "on")],
             value="off",
@@ -126,7 +146,7 @@ class Setting(Panel):
                 children=[
                     self.phonon_property_,
                     self.supercell_widget,
-                    ],
+                ],
                 layout=ipw.Layout(justify_content="flex-start"),
             ),
             self.dielectric_property_,
@@ -143,28 +163,34 @@ class Setting(Panel):
         ]
         super().__init__(**kwargs)
 
+    def _onclick_spectrum_choice(self, change):
+        if change["new"] == "raman":
+            self.dielectric_property_.value = "raman"
+        elif change["new"] == "ir":
+            self.dielectric_property_.value = "ir"
+
     def get_panel_value(self):
         """Return a dictionary with the input parameters for the plugin."""
         return {
-                "phonon_property": self.phonon_property_.value,
-                "dielectric_property": self.dielectric_property_.value,
-                "material_is_polar": self.material_is_polar_.value,
-                "supercell_selector": self.supercell,
-                "spectrum": self.spectrum_.value,
-                }
+            "phonon_property": self.phonon_property_.value,
+            "dielectric_property": self.dielectric_property_.value,
+            "material_is_polar": self.material_is_polar_.value,
+            "supercell_selector": self.supercell,
+            "spectrum": self.spectrum_.value,
+        }
 
     def load_panel_value(self, input_dict):
         """Load a dictionary with the input parameters for the plugin."""
-        self.phonon_property_.value = input_dict.get("phonon_property","none")
+        self.phonon_property_.value = input_dict.get("phonon_property", "none")
         self.dielectric_property_.value = input_dict.get("dielectric_property", "none")
         self.material_is_polar_.value = input_dict.get("material_is_polar", "off")
         self.spectrum_.value = input_dict.get("spectrum", "off")
-        self.supercell = input_dict.get("supercell_selector", [2,2,2])
-        
+        self.supercell = input_dict.get("supercell_selector", [2, 2, 2])
+
     def reset(self):
         """Reset the panel"""
         self.phonon_property_.value = "none"
         self.dielectric_property_.value = "none"
         self.material_is_polar_.value = "off"
         self.spectrum_.value = "off"
-        self.supercell = [2,2,2]
+        self.supercell = [2, 2, 2]
