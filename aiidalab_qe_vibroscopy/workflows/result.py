@@ -37,11 +37,12 @@ class Result(ResultPanel):
                     ipw.VBox([no_mode_widget, explanation_widget])
                 ]
             
-            spectrum_widget = SpectrumPlotWidget(self.node)
-            raman_modes_animation = ActiveModesWidget(self.node)
-            if spectra_data[3] in ["Raman vibrational spectrum","Infrared vibrational spectrum"]:
+            else:
+                spectrum_widget = SpectrumPlotWidget(self.node)
+                raman_modes_animation = ActiveModesWidget(self.node)
+                if spectra_data[3] in ["Raman vibrational spectrum","Infrared vibrational spectrum"]:
 
-                self.children = [ipw.VBox([spectrum_widget, raman_modes_animation])]
+                    self.children = [ipw.VBox([spectrum_widget, raman_modes_animation])]
 
         if phonon_data:
             if phonon_data[2] == "bands":
