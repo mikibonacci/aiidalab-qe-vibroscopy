@@ -27,12 +27,19 @@ class Result(ResultPanel):
         phonon_data = export_phononworkchain_data(self.node)
 
         if spectra_data:
+            
+            if isinstance(spectra_data,str):
+                #No Modes are detected. So we explain why
+                no_mode_widget = ipw.HTML(spectra_data)
+                explanation_widget = ipw.HTML("This may be due to the fact that the current implementation of *aiida-vibroscopy* only considers first-order effects.")
+                
+                self.children=[
+                    ipw.VBox([no_mode_widget, explanation_widget])
+                ]
+            
             spectrum_widget = SpectrumPlotWidget(self.node)
             raman_modes_animation = ActiveModesWidget(self.node)
-            if spectra_data[3] in [
-                "Raman vibrational spectrum",
-                "Infrared vibrational spectrum",
-            ]:
+            if spectra_data[3] in ["Raman vibrational spectrum","Infrared vibrational spectrum"]:
 
                 self.children = [ipw.VBox([spectrum_widget, raman_modes_animation])]
 

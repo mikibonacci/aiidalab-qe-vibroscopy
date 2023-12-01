@@ -66,6 +66,7 @@ def export_iramanworkchain_data(node):
     if "vibrational_data" in node.outputs.vibronic.iraman:
 
         vibro = node.outputs.vibronic.iraman.vibrational_data.numerical_accuracy_4
+<<<<<<< HEAD
 
         if "raman_tensors" not in vibro.get_arraynames():
             (
@@ -75,6 +76,17 @@ def export_iramanworkchain_data(node):
             ) = vibro.run_powder_ir_intensities()
             total_intensities = polarized_intensities
 
+=======
+        
+        if node.inputs.iraman.dielectric.property == "ir":
+            polarized_intensities, frequencies, labels = vibro.run_powder_ir_intensities(frequency_laser=532, temperature=300)
+            total_intensities =  polarized_intensities 
+            
+            #sometimes IR/Raman has not active peaks by symmetry, or due to the fact that 1st order cannot capture them
+            if len(total_intensities) == 0:
+                return "No IR modes detected." #explanation added in the main results script of the app.
+            
+>>>>>>> main
             frequencies, total_intensities = plot_powder(frequencies, total_intensities)
 
             return [
@@ -83,6 +95,7 @@ def export_iramanworkchain_data(node):
                 labels,
                 "Infrared vibrational spectrum",
             ]
+<<<<<<< HEAD
         else:
             (
                 polarized_intensities,
@@ -91,6 +104,16 @@ def export_iramanworkchain_data(node):
                 labels,
             ) = vibro.run_powder_raman_intensities(frequency_laser=532, temperature=300)
             total_intensities = polarized_intensities + depolarized_intensities
+=======
+        elif node.inputs.iraman.dielectric.property == "raman":
+            polarized_intensities, depolarized_intensities, frequencies, labels = vibro.run_powder_raman_intensities(frequency_laser=532, temperature=300)
+            total_intensities =  polarized_intensities + depolarized_intensities
+            
+            #sometimes IR/Raman has not active peaks by symmetry, or due to the fact that 1st order cannot capture them
+            if len(total_intensities) == 0:
+                return "No Raman modes detected." #explanation added in the main results script of the app.
+            
+>>>>>>> main
             frequencies, total_intensities = plot_powder(frequencies, total_intensities)
             return [
                 total_intensities,
