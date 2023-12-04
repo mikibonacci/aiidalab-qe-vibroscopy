@@ -128,13 +128,15 @@ class VibroWorkChain(WorkChain):
         
         builder = cls.get_builder()
         
+        
         if trigger == "phonon":
+            
             builder_phonon = PhononWorkChain.get_builder_from_protocol(
                 pw_code=pw_code,
                 phonopy_code=phonopy_code,
                 structure=structure,
                 protocol=protocol,
-                overrides=overrides,
+                overrides=overrides["phonon"],
                 phonon_property=phonon_property,
                 **kwargs
             )
@@ -154,7 +156,7 @@ class VibroWorkChain(WorkChain):
                 code=pw_code,
                 structure=structure,
                 protocol=protocol,
-                overrides=overrides,
+                overrides=overrides["dielectric"],
                 **kwargs
             )
 
@@ -174,6 +176,7 @@ class VibroWorkChain(WorkChain):
                 phonon_property=phonon_property,
                 **kwargs
             )
+        
             
             # MB supposes phonopy will always run serially, otherwise choose phono3py 
             # also this is needed to be set here.
@@ -192,7 +195,7 @@ class VibroWorkChain(WorkChain):
             builder_harmonic.phonopy.parameters = Dict(dict=phonon_property.value)
 
             builder.harmonic = builder_harmonic
-
+            
         elif trigger == "iraman":
             builder_iraman = IRamanSpectraWorkChain.get_builder_from_protocol(
                 code=pw_code,
@@ -211,7 +214,13 @@ class VibroWorkChain(WorkChain):
             }
             builder_iraman.phonon.phonopy.parameters = Dict({})
             
+            #Remove kpoints_parallel_distance if for 1D and 2D materials
+            if structure.pbc != (True, True, True):
+                builder_iraman.dielectric.pop("kpoints_parallel_distance", None)
+
             builder.iraman = builder_iraman
+
+
         
         for wchain in ["phonon","dielectric","harmonic","iraman",]:
             if trigger != wchain: builder.pop(wchain,None)
