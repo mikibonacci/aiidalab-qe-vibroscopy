@@ -36,9 +36,10 @@ class Setting(Panel):
             value="raman",
             style={"description_width": "initial"},
         )
-        
+
         # 1. Supercell
-        self.supercell=[1,1,1]
+        self.supercell = [1, 1, 1]
+
         def change_supercell(_=None):
             self.supercell = [
                 _supercell[0].value,
@@ -54,7 +55,13 @@ class Setting(Panel):
         for elem in _supercell:
             elem.observe(change_supercell, names="value")
         self.supercell_selector = ipw.HBox(
-            children=[ipw.HTML(description="Supercell size:",style={"description_width": "initial"})] + _supercell,
+            children=[
+                ipw.HTML(
+                    description="Supercell size:",
+                    style={"description_width": "initial"},
+                )
+            ]
+            + _supercell,
         )
 
         self.children = [
@@ -75,12 +82,9 @@ class Setting(Panel):
 
     def get_panel_value(self):
         """Return a dictionary with the input parameters for the plugin."""
-        return {
-            "spectrum": self.spectrum.value,
-            "supercell_selector": self.supercell
-        }
+        return {"spectrum": self.spectrum.value, "supercell_selector": self.supercell}
 
     def load_panel_value(self, input_dict):
         """Load a dictionary with the input parameters for the plugin."""
         self.spectrum.value = input_dict.get("spectrum", "raman")
-        self.supercell = input_dict.get("supercell_selector", [1,1,1])
+        self.supercell = input_dict.get("supercell_selector", [1, 1, 1])

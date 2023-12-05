@@ -9,6 +9,7 @@ Then, install this plugin by:
 
 ```shell
 pip install -e .
+python phonopy_install.py
 ```
 
 ## License
