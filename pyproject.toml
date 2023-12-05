@@ -6,7 +6,8 @@ build-backend = "flit_core.buildapi"
 name = "aiidalab-qe-vibroscopy"
 dynamic = ["description", "version"]
 authors = [
-    {name = "Miki Bonacci", email = "mikibonacci@hotmail.it"}
+    {name = "Miki Bonacci", email = "miki.bonacci@psi.ch"},
+    {name = "Andres Ortega Guerrero", email = "andres.ortega-guerrero@empa.ch"}
 ]
 readme = "README.md"
 license = {file = "LICENSE.txt"}

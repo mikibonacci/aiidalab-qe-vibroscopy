@@ -28,6 +28,8 @@ def install_phonopy():
 
         # Use subprocess.run to run the command
         subprocess.run(command, check=True)
+    else:
+        raise ValueError("Code phonopy@localhost already installed!")
 
 
 # Called when the script is run directly
