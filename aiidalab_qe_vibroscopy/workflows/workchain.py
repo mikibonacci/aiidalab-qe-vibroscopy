@@ -14,38 +14,37 @@ def get_builder(codes, structure, parameters):
     pw_code = codes.get("pw")
     phonopy_code = codes.get("phonopy")
 
-    phonon_property = parameters["vibronic"].pop("phonon_property", "none")
-    if phonon_property in ["none", "NONE"]:
-        phonon_property = PhononProperty.NONE
-    else:
-        phonon_property = PhononProperty[phonon_property]
+    calc_option = parameters["vibronic"].pop("calc_options", "raman")
 
+    calc_option_mapping = {
+    "ph_bands": PhononProperty.BANDS,
+    "ph_dos": PhononProperty.DOS,
+    "ph_therm": PhononProperty.THERMAL,
+    }
+
+    #Define the phonon property to be calculated
+    phonon_property = calc_option_mapping.get(calc_option, PhononProperty.NONE)
+
+    #Define if the material is polar
     polar = parameters["vibronic"].pop("material_is_polar", "off")
+    #Define the supercell matrix
     supercell_matrix = parameters["vibronic"].pop("supercell_selector", None)
 
-    dielectric_property = parameters["vibronic"]["dielectric_property"]
-
-    spectrum = parameters["vibronic"]["spectrum"]
-
-    trigger = "phonon"
-
-    if spectrum != "off":
+    #initialize the dielectric property
+    dielectric_property = "none"
+    #Logic to define the trigger and the dielectric property
+    if calc_option in ["ph_bands", "ph_pdos",  "ph_therm"]:
+        if polar == "on":
+            trigger = "harmonic"
+            dielectric_property = "raman"
+        else:
+            trigger = "phonon"
+    elif calc_option in ["raman", "ir"]:
         trigger = "iraman"
-        dielectric_property = spectrum
-
-    if polar == "on" and trigger == "phonon":
-        # the material is polar, so we need to run HarmonicWChain instead of PhononWChain.
-        trigger = "harmonic"
-        dielectric_property = "raman"
-
-    if trigger not in ["iraman", "harmonic"] and (
-        phonon_property != "none" and dielectric_property != "none"
-    ):
-        trigger = "harmonic"
-    if trigger not in ["iraman", "harmonic"] and (
-        phonon_property == "none" and dielectric_property != "none"
-    ):
+        dielectric_property = calc_option
+    elif calc_option == "dielectric":
         trigger = "dielectric"
+        dielectric_property = "dielectric"
 
     scf_overrides = deepcopy(parameters["advanced"])
     overrides = {
