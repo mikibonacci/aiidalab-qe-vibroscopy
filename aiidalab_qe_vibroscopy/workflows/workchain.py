@@ -19,7 +19,7 @@ def get_builder(codes, structure, parameters):
     calc_option_mapping = {
     "ph_bands": PhononProperty.BANDS,
     "ph_dos": PhononProperty.DOS,
-    "ph_therm": PhononProperty.THERMAL,
+    "ph_therm": PhononProperty.THERMODYNAMIC,
     }
 
     #Define the phonon property to be calculated
