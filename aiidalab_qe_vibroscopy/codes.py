@@ -3,8 +3,7 @@ from aiidalab_widgets_base import (
 )
 
 
-
 PhonopyCode = ComputationalResourcesWidget(
-            description="phonopy:",
-            default_calc_job_plugin="phonopy.phonopy",
-        )
+    description="phonopy:",
+    default_calc_job_plugin="phonopy.phonopy",
+)

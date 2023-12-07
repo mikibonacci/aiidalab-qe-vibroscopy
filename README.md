@@ -9,6 +9,7 @@ Then, install this plugin by:
 
 ```shell
 pip install -e .
+python phonopy_install.py
 ```
 
 ## License
@@ -18,3 +19,4 @@ MIT
 ## Contact
 
 miki.bonacci@psi.ch
+andres.ortega-guerrero@empa.ch

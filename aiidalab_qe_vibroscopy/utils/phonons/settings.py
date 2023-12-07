@@ -24,7 +24,7 @@ class Setting(Panel):
         self.settings_help = ipw.HTML(
             """<div style="line-height: 140%; padding-top: 0px; padding-bottom: 5px">
             Please select the phonon-related properties to be computed in the simulation.
-            If the material is polar, also 3rd order derivatives will be computed and more 
+            If the material is polar, also 3rd order derivatives will be computed and more
             accurate phonon band interpolation is done.
             </div>"""
         )
@@ -33,13 +33,13 @@ class Setting(Panel):
             value="moderate",
         )
 
-        #I want to be able to select more than only one... this has to change at the PhononWorkChain level.
+        # I want to be able to select more than only one... this has to change at the PhononWorkChain level.
         self.phonon_property = ipw.Dropdown(
             options=[
-                ["bands","BANDS"], 
-                ["dos","DOS"], 
-                ["thermodynamic","THERMODYNAMIC"],
-                ["force constants","NONE"],
+                ["bands", "BANDS"],
+                ["dos", "DOS"],
+                ["thermodynamic", "THERMODYNAMIC"],
+                ["force constants", "NONE"],
             ],
             value="BANDS",
             description="Phonon property:",
@@ -50,19 +50,19 @@ class Setting(Panel):
         self.children = [
             self.settings_title,
             self.settings_help,
-            self.phonon_property,  
+            self.phonon_property,
         ]
         super().__init__(**kwargs)
 
     def get_panel_value(self):
         """Return a dictionary with the input parameters for the plugin."""
-        if isinstance(self.phonon_property,str):
+        if isinstance(self.phonon_property, str):
             return {
                 "phonon_property": self.phonon_property,
-                }
+            }
         return {
-                "phonon_property": self.phonon_property.value,
-                }
+            "phonon_property": self.phonon_property.value,
+        }
 
     def load_panel_value(self, input_dict):
         """Load a dictionary with the input parameters for the plugin."""

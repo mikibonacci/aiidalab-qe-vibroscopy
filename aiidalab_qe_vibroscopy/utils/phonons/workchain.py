@@ -5,19 +5,23 @@ from aiida_vibroscopy.common.properties import PhononProperty
 
 PhononWorkChain = WorkflowFactory("vibroscopy.phonons.phonon")
 
+
 def get_builder(codes, structure, parameters):
     from copy import deepcopy
+
     pw_code = codes.get("pw")
     phonopy_code = codes.get("phonopy", None)
-    phonon_property = PhononProperty[parameters["harmonic"].pop("phonon_property","none")]
-    supercell_matrix = parameters["harmonic"].pop("supercell_selector",None)
+    phonon_property = PhononProperty[
+        parameters["harmonic"].pop("phonon_property", "none")
+    ]
+    supercell_matrix = parameters["harmonic"].pop("supercell_selector", None)
     protocol = parameters["workchain"].pop("protocol", "fast")
     scf_overrides = deepcopy(parameters["advanced"])
     overrides = {
         "scf": scf_overrides,
-        "supercell_matrix":supercell_matrix,
+        "supercell_matrix": supercell_matrix,
     }
-    
+
     builder = PhononWorkChain.get_builder_from_protocol(
         pw_code=pw_code,
         phonopy_code=phonopy_code,
@@ -29,14 +33,14 @@ def get_builder(codes, structure, parameters):
         spin_type=SpinType(parameters["workchain"]["spin_type"]),
         initial_magnetic_moments=parameters["advanced"]["initial_magnetic_moments"],
     )
-    
-    # MB supposes phonopy will always run serially, otherwise choose phono3py 
+
+    # MB supposes phonopy will always run serially, otherwise choose phono3py
     # also this is needed to be set here.
     builder.phonopy.metadata.options.resources = {
-            "num_machines": 1,
-            "num_mpiprocs_per_machine": 1,
-        }
-    
+        "num_machines": 1,
+        "num_mpiprocs_per_machine": 1,
+    }
+
     return builder
 
 

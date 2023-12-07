@@ -8,18 +8,18 @@ from aiidalab_widgets_base import ComputationalResourcesWidget
 
 class Outline(OutlinePanel):
     title = "Vibrational properties"
-    #description = "IR and Raman spectra; you may also select phononic and dielectric properties"
-    
+    # description = "IR and Raman spectra; you may also select phononic and dielectric properties"
+
 
 phonopy_code = ComputationalResourcesWidget(
     description="phonopy",
     default_calc_job_plugin="phonopy.phonopy",
 )
 
-property ={
-"outline": Outline,
-"code": {"phonopy": phonopy_code},
-"setting": Setting,
-"workchain": workchain_and_builder,
-"result": Result,
+property = {
+    "outline": Outline,
+    "code": {"phonopy": phonopy_code},
+    "setting": Setting,
+    "workchain": workchain_and_builder,
+    "result": Result,
 }
