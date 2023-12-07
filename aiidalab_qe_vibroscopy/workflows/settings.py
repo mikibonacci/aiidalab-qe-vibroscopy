@@ -7,11 +7,11 @@ Authors:
     Inspired by Xing Wang <xing.wang@psi.ch>
 """
 import ipywidgets as ipw
-from aiida.orm import Float, Int, Str
 import traitlets as tl
 
 from aiidalab_qe.common.panel import Panel
 from IPython.display import clear_output, display
+
 
 class Setting(Panel):
     title = "Vibrational Settings"
@@ -24,8 +24,10 @@ class Setting(Panel):
         self.settings_help = ipw.HTML(
             """<div style="line-height: 140%; padding-top: 0px; padding-bottom: 5px">
             Calculations are performed using the <b><a href="https://aiida-vibroscopy.readthedocs.io/en/latest/"
-        target="_blank">aiida-vibroscopy</b></a> plugin. <br>
-            The plugin employes the finite-displacement and finite-field approach, for Phonon dispersion please select a supercell size. <br>
+        target="_blank">aiida-vibroscopy</b></a> plugin (L. Bastonero and N. Marzari, <a href="https://arxiv.org/abs/2308.04308"
+        target="_blank">Automated all-functionals infrared and Raman spectra</a>). <br>
+            The plugin employes the finite-displacement and finite-field approach, for Phonon dispersion please select a supercell size:
+            the larger the supercell, the larger the computational cost of the simulations. Usually, a 2x2x2 supercell should be enough. <br>
             </div>"""
         )
 
@@ -67,7 +69,7 @@ class Setting(Panel):
         )
 
         self.supercell_out = ipw.Output()
-    
+
         # start Supercell
         self.supercell = [2, 2, 2]
 
@@ -77,6 +79,7 @@ class Setting(Panel):
                 self._sc_y.value,
                 self._sc_z.value,
             ]
+
         for elem in ["x", "y", "z"]:
             setattr(
                 self,
@@ -113,13 +116,18 @@ class Setting(Panel):
             value="off",
             style={"description_width": "initial"},
         )
-        #self.material_is_polar_.observe(self._onclick_material_is_polar, "value")
-        self.calc_options.observe(self._display_supercell, names='value')
+        # self.material_is_polar_.observe(self._onclick_material_is_polar, "value")
+        self.calc_options.observe(self._display_supercell, names="value")
         self.children = [
             self.settings_title,
             self.settings_help,
             self.use_help,
-            ipw.HBox([self.calc_options, self.supercell_out,]),
+            ipw.HBox(
+                [
+                    self.calc_options,
+                    self.supercell_out,
+                ]
+            ),
             self.polar_help,
             ipw.HBox(
                 children=[
