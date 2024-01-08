@@ -11,8 +11,8 @@ def get_builder(codes, structure, parameters):
     from copy import deepcopy
 
     protocol = parameters["workchain"].pop("protocol", "fast")
-    pw_code = codes.get("pw")
-    phonopy_code = codes.get("phonopy")
+    pw_code = codes.get("pw", None).get("code", None)
+    phonopy_code = codes.get("phonopy", None).get("code", None)
 
     calc_option = parameters["vibronic"].pop("calc_options", "raman")
 
