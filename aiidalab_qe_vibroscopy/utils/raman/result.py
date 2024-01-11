@@ -65,7 +65,8 @@ def export_iramanworkchain_data(node):
 
     if "vibrational_data" in node.outputs.vibronic.iraman:
 
-        vibro = node.outputs.vibronic.iraman.vibrational_data.numerical_accuracy_4
+        vibrational_data = node.outputs.vibronic.iraman.vibrational_data
+        vibro = vibrational_data.numerical_accuracy_4 if hasattr(vibrational_data, 'numerical_accuracy_4') else vibrational_data.numerical_accuracy_2
 
         if "raman_tensors" not in vibro.get_arraynames():
             (
@@ -151,9 +152,8 @@ class SpectrumPlotWidget(ipw.VBox):
     def __init__(self, node, **kwargs):
         self.node = node
         # VibrationalData
-        self.vibro = (
-            self.node.outputs.vibronic.iraman.vibrational_data.numerical_accuracy_4
-        )
+        vibrational_data = self.node.outputs.vibronic.iraman.vibrational_data
+        self.vibro = vibrational_data.numerical_accuracy_4 if hasattr(vibrational_data, 'numerical_accuracy_4') else vibrational_data.numerical_accuracy_2
         self.spectrum_type = (
             "Raman" if "raman_tensors" in self.vibro.get_arraynames() else "IR"
         )
@@ -397,10 +397,9 @@ class ActiveModesWidget(ipw.VBox):
     def __init__(self, node, **kwargs):
         self.node = node
         # VibrationalData
-        self.vibro = (
-            self.node.outputs.vibronic.iraman.vibrational_data.numerical_accuracy_4
-        )
-
+        vibrational_data = self.node.outputs.vibronic.iraman.vibrational_data
+        self.vibro = vibrational_data.numerical_accuracy_4 if hasattr(vibrational_data, 'numerical_accuracy_4') else vibrational_data.numerical_accuracy_2
+       
         self.spectrum_type = (
             "Raman" if "raman_tensors" in self.vibro.get_arraynames() else "IR"
         )
