@@ -5,63 +5,110 @@
 from widget_bandsplot import BandsPlotWidget
 
 from aiidalab_qe.common.panel import ResultPanel
+from aiidalab_qe.common.bandpdoswidget import cmap, get_bands_labeling
 
 import numpy as np
+import json
+
+
+def replace_symbols_with_uppercase(data):
+    symbols_mapping = {
+        "$\Gamma$": "\u0393",
+        "$\\Gamma$": "\u0393",
+        "$\\Delta$": "\u0394",
+        "$\\Lambda$": "\u039B",
+        "$\\Sigma$": "\u03A3",
+        "$\\Epsilon$": "\u0395",
+    }
+
+    for sublist in data:
+        for i, element in enumerate(sublist):
+            if element in symbols_mapping:
+                sublist[i] = symbols_mapping[element]
 
 
 def export_phononworkchain_data(node, fermi_energy=None):
 
     """
-    We have multiple choices: BANDS, DOS, THERMODYNAMIC, FORCES.
+    We have multiple choices: BANDS, DOS, THERMODYNAMIC.
     """
 
     import json
 
     from monty.json import jsanitize
 
+    full_data = {
+        "bands": None,
+        "pdos": None,
+        "thermo": None,
+    }
     parameters = {}
-    if "output_phonopy" in node.outputs.phonons:
-        if "phonon_bands" in node.outputs.phonons.output_phonopy:
-            data = json.loads(
-                node.outputs.phonons.output_phonopy.phonon_bands._exportcontent(
-                    "json", comments=False
-                )[0]
-            )
-            # The fermi energy from band calculation is not robust.
-            """data["fermi_level"] = (
-                fermi_energy or node.outputs.phonons.band_parameters["fermi_energy"]
-            )"""
-            # to be optimized: use the above results!!!
-            bands = node.outputs.phonons.output_phonopy.phonon_bands.get_bands()
-            data["fermi_level"] = 0
-            data["Y_label"] = "Dispersion (THz)"
 
-            # it does work now.
-            parameters["energy_range"] = {
-                "ymin": np.min(bands) - 0.1,
-                "ymax": np.max(bands) + 0.1,
+    if not "vibronic" in node.outputs:
+        return None
+
+    if "phonon_bands" in node.outputs.vibronic:
+
+        """
+        copied and pasted from aiidalab_qe.common.bandsplotwidget.
+        adapted for phonon outputs
+        """
+
+        data = json.loads(
+            node.outputs.vibronic.phonon_bands._exportcontent("json", comments=False)[0]
+        )
+        # The fermi energy from band calculation is not robust.
+        data["fermi_energy"] = 0
+        data["pathlabels"] = get_bands_labeling(data)
+        replace_symbols_with_uppercase(data["pathlabels"])
+        data["Y_label"] = "Dispersion (THz)"
+
+        # it does work now.
+        bands = node.outputs.vibronic.phonon_bands.get_bands()
+        parameters["energy_range"] = {
+            "ymin": np.min(bands) - 0.1,
+            "ymax": np.max(bands) + 0.1,
+        }
+
+        full_data["bands"] = [jsanitize(data), parameters]
+
+        if "phonon_pdos" in node.outputs.vibronic:
+
+            phonopy_calc = node.outputs.vibronic.phonon_pdos.creator
+
+            kwargs = {}
+            if "settings" in phonopy_calc.inputs:
+                the_settings = phonopy_calc.inputs.settings.get_dict()
+                for key in ["symmetrize_nac", "factor_nac", "subtract_residual_forces"]:
+                    if key in the_settings:
+                        kwargs.update({key: the_settings[key]})
+
+            symbols = node.inputs.structure.get_ase().get_chemical_symbols()
+            pdos = node.outputs.vibronic.phonon_pdos
+
+            index_dict, dos_dict = {}, {
+                "total_dos": np.zeros(np.shape(pdos.get_y()[0][1]))
             }
+            for atom in set(symbols):
+                # index lists
+                index_dict[atom] = [
+                    i for i in range(len(symbols)) if symbols[i] == atom
+                ]
+                # initialization of the pdos
+                dos_dict[atom] = np.zeros(
+                    np.shape(pdos.get_y()[index_dict[atom][0]][1])
+                )
 
-            # TODO: THERMOD, FORCES; minors: bands-labels, done: no-fermi-in-dos.
+                for atom_contribution in index_dict[atom][:]:
+                    dos_dict[atom] += pdos.get_y()[atom_contribution][1]
+                    dos_dict["total_dos"] += pdos.get_y()[atom_contribution][1]
 
-            return [jsanitize(data), parameters, "bands"]
-        elif "total_phonon_dos" in node.outputs.phonons.output_phonopy:
-            (
-                what,
-                energy_dos,
-                units_omega,
-            ) = node.outputs.phonons.output_phonopy.total_phonon_dos.get_x()
-            (
-                dos_name,
-                dos_data,
-                units_dos,
-            ) = node.outputs.phonons.output_phonopy.total_phonon_dos.get_y()[0]
             dos = []
             # The total dos parsed
             tdos = {
                 "label": "Total DOS",
-                "x": energy_dos.tolist(),
-                "y": dos_data.tolist(),
+                "x": pdos.get_x()[1].tolist(),
+                "y": dos_dict.pop("total_dos").tolist(),
                 "borderColor": "#8A8A8A",  # dark gray
                 "backgroundColor": "#8A8A8A",  # light gray
                 "backgroundAlpha": "40%",
@@ -69,98 +116,61 @@ def export_phononworkchain_data(node, fermi_energy=None):
             }
             dos.append(tdos)
 
-            parameters["energy_range"] = {
-                "ymin": np.min(energy_dos) - 0.1,
-                "ymax": np.max(energy_dos) + 0.1,
-            }
+            t = 0
+            for atom in dos_dict.keys():
+                tdos = {
+                    "label": atom,
+                    "x": pdos.get_x()[1].tolist(),
+                    "y": dos_dict[atom].tolist(),
+                    "borderColor": cmap(atom),
+                    "backgroundColor": cmap(atom),
+                    "backgroundAlpha": "40%",
+                    "lineStyle": "solid",
+                }
+                t += 1
+                dos.append(tdos)
 
             data_dict = {
                 "fermi_energy": 0,  # I do not want it in my plot
                 "dos": dos,
             }
 
-            return [json.loads(json.dumps(data_dict)), parameters, "dos"]
-        elif "thermal_properties" in node.outputs.phonons.output_phonopy:
+            parameters = {}
+            parameters["energy_range"] = {
+                "ymin": np.min(dos[0]["x"]),
+                "ymax": np.max(dos[0]["x"]),
+            }
+
+            full_data["pdos"] = [json.loads(json.dumps(data_dict)), parameters, "dos"]
+
+        if "phonon_thermo" in node.outputs.vibronic:
             (
                 what,
                 T,
                 units_k,
-            ) = node.outputs.phonons.output_phonopy.thermal_properties.get_x()
+            ) = node.outputs.vibronic.phonon_thermo.get_x()
             (
                 F_name,
                 F_data,
                 units_F,
-            ) = node.outputs.phonons.output_phonopy.thermal_properties.get_y()[0]
+            ) = node.outputs.vibronic.phonon_thermo.get_y()[0]
             (
                 Entropy_name,
                 Entropy_data,
                 units_entropy,
-            ) = node.outputs.phonons.output_phonopy.thermal_properties.get_y()[1]
+            ) = node.outputs.vibronic.phonon_thermo.get_y()[1]
             (
                 Cv_name,
                 Cv_data,
                 units_Cv,
-            ) = node.outputs.phonons.output_phonopy.thermal_properties.get_y()[2]
+            ) = node.outputs.vibronic.phonon_thermo.get_y()[2]
 
-            return (
+            full_data["thermo"] = (
                 [T, F_data, units_F, Entropy_data, units_entropy, Cv_data, units_Cv],
                 [],
                 "thermal",
             )
 
+        return full_data
     else:
         return None
-
-
-class Result(ResultPanel):
-
-    title = "Phonon property"
-    workchain_label = "phonons"
-
-    def _update_view(self):
-        bands_data = export_phononworkchain_data(self.node)
-
-        if bands_data[2] == "bands":
-            _bands_plot_view = BandsPlotWidget(
-                bands=[bands_data[0]],
-                **bands_data[1],
-            )
-            self.children = [
-                _bands_plot_view,
-            ]
-        elif bands_data[2] == "dos":
-            _bands_plot_view = BandsPlotWidget(
-                dos=bands_data[0],
-                plot_fermilevel=False,
-                show_legend=False,
-                **bands_data[1],
-            )
-            self.children = [
-                _bands_plot_view,
-            ]
-
-        elif bands_data[2] == "thermal":
-            import plotly.graph_objects as go
-
-            T = bands_data[0][0]
-            F = bands_data[0][1]
-            F_units = bands_data[0][2]
-            E = bands_data[0][3]
-            E_units = bands_data[0][4]
-            Cv = bands_data[0][5]
-            Cv_units = bands_data[0][6]
-
-            g = go.FigureWidget(
-                layout=go.Layout(
-                    title=dict(text="Thermal properties"),
-                    barmode="overlay",
-                )
-            )
-            g.layout.xaxis.title = "Temperature (K)"
-            g.add_scatter(x=T, y=F, name=f"Helmoltz Free Energy ({F_units})")
-            g.add_scatter(x=T, y=E, name=f"Entropy ({E_units})")
-            g.add_scatter(x=T, y=Cv, name=f"Specific Heat-V=const ({Cv_units})")
-
-            self.children = [
-                g,
-            ]
