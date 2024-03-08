@@ -234,6 +234,17 @@ class VibroWorkChain(WorkChain):
                 "help": "Inputs for the `IRamanSpectraWorkChain`.",
             },
         )
+        spec.expose_inputs(
+            PhonopyCalculation, namespace='phonopy_calc',
+            namespace_options={
+                'required': False, 'populate_defaults': False,
+                'help': (
+                    'Inputs for the `PhonopyCalculation` that will'
+                    'be used to calculate the inter-atomic force constants, or for post-processing.'
+                )
+            },
+            exclude=['phonopy_data', 'force_constants', 'parameters'],
+        )
         spec.input(
             "phonopy_bands_dict",
             valid_type=Dict,
@@ -594,7 +605,11 @@ class VibroWorkChain(WorkChain):
         for wchain_idx in range(1, 5):
             if simulation_mode != wchain_idx:
                 builder.pop(available_wchains[wchain_idx - 1], None)
-
+        builder.phonopy_calc.code = phonopy_code
+        builder.phonopy_calc.metadata.options.resources = {
+                "num_machines": 1,
+                "num_mpiprocs_per_machine": 1,
+            }
         builder.structure = structure
 
         return builder
@@ -656,23 +671,16 @@ class VibroWorkChain(WorkChain):
             # try in a verdi shell: from plumpy.utils import AttributesFrozendict
             if self.ctx.key == "phonon":
                 # See how this works in PhononWorkChain
-                inputs = self.ctx.phonopy.copy(
-                    **{
-                        "phonopy_data": self.ctx[self.ctx.key].outputs.phonopy_data,
-                        "parameters": self.inputs[f"phonopy_{calc_type}_dict"],
-                    }
-                )
+                inputs = AttributeDict(self.exposed_inputs(PhonopyCalculation, namespace="phonopy_calc"))
+                inputs.phonopy_data = self.ctx[self.ctx.key].outputs.phonon_data
+                inputs.parameters = self.inputs[f"phonopy_{calc_type}_dict"]
+                
             elif self.ctx.key == "harmonic":
                 # See how this works in HarmonicWorkChain
-                inputs = self.ctx.phonopy.copy(
-                    **{
-                        "force_constants": list(
-                            self.ctx[self.ctx.key].outputs["vibrational_data"].values()
-                        )[-1],
-                        "parameters": self.inputs[f"phonopy_{calc_type}_dict"],
-                    }
-                )
-
+                inputs = AttributeDict(self.exposed_inputs(PhonopyCalculation, namespace="phonopy_calc"))
+                inputs.force_constants  = list(self.ctx[self.ctx.key].outputs["vibrational_data"].values())[-1]
+                inputs.parameters = self.inputs[f"phonopy_{calc_type}_dict"]
+                
             inputs.metadata.call_link_label = key
             future = self.submit(PhonopyCalculation, **inputs)
             self.report(
