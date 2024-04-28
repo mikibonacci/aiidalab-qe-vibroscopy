@@ -2,7 +2,6 @@
 
 """
 
-from widget_bandsplot import BandsPlotWidget
 
 from aiidalab_qe.common.panel import ResultPanel
 from aiidalab_qe.common.bandpdoswidget import cmap, get_bands_labeling
