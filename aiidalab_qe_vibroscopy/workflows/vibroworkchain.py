@@ -352,8 +352,7 @@ class VibroWorkChain(WorkChain):
         :param protocol: protocol to use, if not specified, the default will be used.
         :param overrides: optional dictionary of inputs to override the defaults of the protocol.
         :param simulation_mode: what type of simulation to run. Refer to the settings.py of the app.
-        :param options: A dictionary of options that will be recursively set for the ``metadata.options`` input of all
-            the ``CalcJobs`` that are nested in this work chain.
+        :param options: A dictionary of options that will be recursively set for the ``metadata.options`` input for the builder of the pw workchains.
         :param kwargs: additional keyword arguments that will be passed to the ``get_builder_from_protocol`` of all the
             sub processes that are called by this workchain.
         :return: a process builder instance with all inputs defined ready for launch.
