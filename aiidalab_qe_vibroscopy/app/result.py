@@ -92,7 +92,7 @@ class Result(ResultPanel):
                     bands_data=phonon_data["bands"][0],
                     pdos_data=phonon_data["pdos"][0],
                 )
-                phonon_children += (_bands_plot_view_class._create_fig(),)
+                phonon_children += (_bands_plot_view_class.bandspdosfigure,)
 
             if phonon_data["thermo"]:
                 import plotly.graph_objects as go
