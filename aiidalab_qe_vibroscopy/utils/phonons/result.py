@@ -62,14 +62,15 @@ def export_phononworkchain_data(node, fermi_energy=None):
         replace_symbols_with_uppercase(data["pathlabels"])
         data["Y_label"] = "Dispersion (THz)"
 
-        # it does work now.
-        bands = node.outputs.vibronic.phonon_bands.get_bands()
+        bands = node.outputs.vibronic.phonon_bands._get_bandplot_data(cartesian=True, prettify_format=None, join_symbol=None, get_segments=True)
         parameters["energy_range"] = {
-            "ymin": np.min(bands) - 0.1,
-            "ymax": np.max(bands) + 0.1,
+            "ymin": np.min(bands["y"]) - 0.1,
+            "ymax": np.max(bands["y"]) + 0.1,
         }
-
-        full_data["bands"] = [jsanitize(data), parameters]
+        data["band_type_idx"] = bands["band_type_idx"]
+        data["x"] = bands["x"]
+        data["y"] = bands["y"]
+        full_data["bands"] = [data, parameters]
 
         if "phonon_pdos" in node.outputs.vibronic:
 

@@ -671,7 +671,7 @@ class VibroWorkChain(WorkChain):
             if self.ctx.key == "phonon":
                 # See how this works in PhononWorkChain
                 inputs = AttributeDict(self.exposed_inputs(PhonopyCalculation, namespace="phonopy_calc"))
-                inputs.phonopy_data = self.ctx[self.ctx.key].outputs.phonon_data
+                inputs.phonopy_data = self.ctx[self.ctx.key].outputs.phonopy_data
                 inputs.parameters = self.inputs[f"phonopy_{calc_type}_dict"]
                 
             elif self.ctx.key == "harmonic":
