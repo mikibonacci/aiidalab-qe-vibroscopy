@@ -157,7 +157,7 @@ class Result(ResultPanel):
                         "This may be due to the fact that the current implementation of aiida-vibroscopy plugin only considers first-order effects."
                     )
 
-                    children_result_widget += (
+                    children_spectra += (
                         ipw.VBox([no_mode_widget, explanation_widget]),
                     )
 
