@@ -130,7 +130,12 @@ class Result(ResultPanel):
             tab_titles.append("Phonon properties")
 
             children_result_widget += (
-                ipw.VBox(children=phonon_children),
+                ipw.VBox(
+                    children=phonon_children,
+                    layout=ipw.Layout(
+                        width="100%",
+                    ),
+                ),
             )  # the comma is required! otherwise the tuple is not detected.
             # euphonic
         # if ins_data:
@@ -173,7 +178,14 @@ class Result(ResultPanel):
                     children_spectra += (
                         ipw.VBox([subwidget_title, spectrum_widget, modes_animation]),
                     )
-            children_result_widget += (ipw.VBox(children=children_spectra),)
+            children_result_widget += (
+                ipw.VBox(
+                    children=children_spectra,
+                    layout=ipw.Layout(
+                        width="100%",
+                    ),
+                ),
+            )
             tab_titles.append(f"Raman/IR spectra")
 
         self.result_tabs = ipw.Tab(children=children_result_widget)
