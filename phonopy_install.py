@@ -23,7 +23,7 @@ def install_phonopy():
             "--computer",
             "localhost",
             "--filepath-executable",
-            "/opt/conda/bin/phonopy",
+            "/home/jovyan/.local/bin/phonopy",
         ]
 
         # Use subprocess.run to run the command
