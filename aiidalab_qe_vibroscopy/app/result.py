@@ -13,10 +13,10 @@ from ..utils.raman.result import export_iramanworkchain_data
 
 from ..utils.phonons.result import export_phononworkchain_data
 
-from ..utils.euphonic.euphonic_widgets import (
+from ..utils.euphonic import (
     export_euphonic_data,
-    IntensityFullWidget,
-    PowderFullWidget,
+    EuphonicSuperWidget,
+    DowloadYamlHdf5Widget,
 )
 import plotly.graph_objects as go
 import ipywidgets as ipw
@@ -33,6 +33,7 @@ class PhononBandPdosPlotly(BandPdosPlotly):
             showgrid=True,
             showline=True,
             zeroline=True,
+            range=self.SETTINGS["vertical_range_bands"],
             fixedrange=False,
             automargin=True,
             ticks="inside",
@@ -92,7 +93,15 @@ class Result(ResultPanel):
                     bands_data=phonon_data["bands"][0],
                     pdos_data=phonon_data["pdos"][0],
                 )
-                phonon_children += (_bands_plot_view_class.bandspdosfigure,)
+
+                download_widget = DowloadYamlHdf5Widget(
+                    phonopy_node=self.node.outputs.vibronic.phonon_pdos.creator
+                )
+
+                phonon_children += (
+                    _bands_plot_view_class.bandspdosfigure,
+                    download_widget,
+                )
 
             if phonon_data["thermo"]:
                 import plotly.graph_objects as go
@@ -137,12 +146,11 @@ class Result(ResultPanel):
                     ),
                 ),
             )  # the comma is required! otherwise the tuple is not detected.
-            # euphonic
-        # if ins_data:
-        #    intensity_map = IntensityFullWidget(fc=ins_data["fc"])
-        #    powder_map = PowderFullWidget(fc=ins_data["fc"])
-        #    children_result_widget += (intensity_map, powder_map)
-        #    tab_titles.append("Inelastic Neutron Scattering")
+        # euphonic
+        if ins_data:
+            intensity_maps = EuphonicSuperWidget(fc=ins_data["fc"])
+            children_result_widget += (intensity_maps,)
+            tab_titles.append(f"Inelastic Neutrons")
 
         if spectra_data:
 

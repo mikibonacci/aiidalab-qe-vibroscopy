@@ -24,10 +24,11 @@ dependencies = [
     #"euphonic==1.1.0",
     "pre-commit",
     "euphonic",
+    "kaleido",
 ]
 
 [project.scripts]
-phonopy_install = "phonopy_install:install_phonopy"
+phonopy_setup = "phonopy_setup:install_phonopy"
 
 [project.urls]
 Source = "https://github.com/mikibonacci/aiidalab-qe-vibroscopy"

@@ -4,6 +4,14 @@ from aiida.orm import load_code
 from aiida import load_profile
 import shutil
 
+"""
+Automatic installation of the phonopy code.
+
+(1) if not already installed: pip install phonopy --user
+(2) if it doesn't already exist, create a symbolic link for Phonopy: ln -s <phonopy path> /opt/conda/bin/phonopy (try which phonopy to see the phonopy path)
+(3) invoke phonopy_setup
+"""
+
 
 def install_phonopy():
     load_profile()
