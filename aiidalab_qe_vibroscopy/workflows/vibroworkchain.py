@@ -426,15 +426,23 @@ class VibroWorkChain(WorkChain):
                         "write_mesh": False,
                     }
                 )
+                builder.phonopy_thermo_dict = Dict(dict=PhononProperty.THERMODYNAMIC.value)
 
                 if structure.pbc == (True, False, False):
                     builder.phonopy_bands_dict = Dict(
                         dict={
+                            "symmetry_tolerance": 1e-3,
                             "band": [0, 0, 0, 1 / 2, 0, 0],
                             "band_points": 100,
                             "band_labels": [GAMMA, "$\\mathrm{X}$"],
                         }
                     )
+                    #change symprec for 1D materials to 1e-3
+                    builder.phonopy_pdos_dict["symmetry_tolerance"] = 1e-3
+                    builder.phonopy_thermo_dict["symmetry_tolerance"] = 1e-3
+                    builder.harmonic.symmetry.symprec = orm.Float(1e-3)
+                    builder.harmonic.phonon.phonopy.parameters = orm.Dict({"symmetry_tolerance": 1e-3})
+
                 elif structure.pbc == (True, True, False):
                     symmetry_path = determine_symmetry_path(structure)
                     builder.phonopy_bands_dict = Dict(
@@ -465,7 +473,7 @@ class VibroWorkChain(WorkChain):
                     }
                 )
 
-            builder.phonopy_thermo_dict = Dict(dict=PhononProperty.THERMODYNAMIC.value)
+                builder.phonopy_thermo_dict = Dict(dict=PhononProperty.THERMODYNAMIC.value)
 
         elif simulation_mode == 2:
 
@@ -489,6 +497,10 @@ class VibroWorkChain(WorkChain):
             # Remove kpoints_parallel_distance if for 1D and 2D materials
             if structure.pbc != (True, True, True):
                 builder_iraman.dielectric.pop("kpoints_parallel_distance", None)
+
+                if structure.pbc == (True, False, False):
+                    builder_iraman.symmetry.symprec = orm.Float(1e-3)
+                    builder_iraman.phonon.phonopy.parameters = orm.Dict({"symmetry_tolerance": 1e-3})
 
             builder.iraman = builder_iraman
 
@@ -536,14 +548,23 @@ class VibroWorkChain(WorkChain):
                     }
                 )
 
+                builder.phonopy_thermo_dict = Dict(dict=PhononProperty.THERMODYNAMIC.value)
+                
                 if structure.pbc == (True, False, False):
                     builder.phonopy_bands_dict = Dict(
                         dict={
+                            "symmetry_tolerance": 1e-3,
                             "band": [0, 0, 0, 1 / 2, 0, 0],
                             "band_points": 100,
                             "band_labels": [GAMMA, "$\\mathrm{X}$"],
                         }
                     )
+                    #change symprec for 1D materials to 1e-3
+                    builder.phonopy_pdos_dict["symmetry_tolerance"] = 1e-3
+                    builder.phonopy_thermo_dict["symmetry_tolerance"] = 1e-3
+                    builder.phonon.symmetry.symprec = orm.Float(1e-3)
+                    builder.phonon.phonopy.parameters = orm.Dict({"symmetry_tolerance": 1e-3})
+
                 elif structure.pbc == (True, True, False):
                     symmetry_path = determine_symmetry_path(structure)
                     builder.phonopy_bands_dict = Dict(
@@ -574,7 +595,7 @@ class VibroWorkChain(WorkChain):
                     }
                 )
 
-            builder.phonopy_thermo_dict = Dict(dict=PhononProperty.THERMODYNAMIC.value)
+                builder.phonopy_thermo_dict = Dict(dict=PhononProperty.THERMODYNAMIC.value)
 
         elif simulation_mode == 4:
 
@@ -609,6 +630,8 @@ class VibroWorkChain(WorkChain):
                 "num_machines": 1,
                 "num_mpiprocs_per_machine": 1,
             }
+        if structure.pbc == (True, False, False):
+            builder.phonopy_calc.parameters = orm.Dict({"symmetry_tolerance": 1e-3})
         builder.structure = structure
 
         return builder
