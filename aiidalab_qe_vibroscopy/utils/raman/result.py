@@ -190,6 +190,12 @@ class SpectrumPlotWidget(ipw.VBox):
             value="""<i class="fa fa-times" style="color:red;font-size:2em;" ></i> wrong syntax""",
             layout={"visibility": "hidden"},
         )
+        self.broadening = ipw.FloatText(
+            value=10.0,
+            description="Broadening (cm-1):",
+            disabled=False,
+            style={"description_width": "initial"},
+        )
         self.spectrum_widget = ipw.Output()
         self.frequencies = []
         self.intensities = []
@@ -220,6 +226,7 @@ class SpectrumPlotWidget(ipw.VBox):
                 self._plot_type,
                 self.temperature,
                 self.frequency_laser,
+                self.broadening,
                 self.polarization_out,
                 ipw.HBox([self.plot_button, self.download_button]),
                 self.wrong_syntax,
@@ -282,7 +289,7 @@ class SpectrumPlotWidget(ipw.VBox):
                 total_intensities = polarized_intensities
 
             self.frequencies, self.intensities = plot_powder(
-                frequencies, total_intensities
+                frequencies, total_intensities, self.broadening.value,
             )
             self._display_figure()
 
