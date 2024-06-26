@@ -1,6 +1,8 @@
 from aiida.plugins import WorkflowFactory
 from aiida_quantumespresso.common.types import ElectronicType, SpinType
 from aiida_quantumespresso.workflows.pw.bands import PwBaseWorkChain
+
+
 from aiida import orm
 
 VibroWorkChain = WorkflowFactory("vibroscopy_app.vibro")
@@ -22,7 +24,8 @@ def create_resource_config(code_details):
                 "num_machines": code_details["nodes"],
                 "num_mpiprocs_per_machine": code_details["ntasks_per_node"],
                 "num_cores_per_mpiproc": code_details["cpus_per_task"],
-            }
+            }, 
+            "max_wallclock_seconds": code_details["max_wallclock_seconds"],
         }
     }
 
