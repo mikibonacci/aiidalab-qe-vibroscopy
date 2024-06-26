@@ -18,16 +18,20 @@ def create_resource_config(code_details):
     Returns:
         dict: A nested dictionary with structured resource configurations.
     """
-    return {
+    options =  {
         "options": {
             "resources": {
                 "num_machines": code_details["nodes"],
                 "num_mpiprocs_per_machine": code_details["ntasks_per_node"],
                 "num_cores_per_mpiproc": code_details["cpus_per_task"],
             }, 
-            "max_wallclock_seconds": code_details["max_wallclock_seconds"],
         }
     }
+    
+    if "max_wallclock_seconds" in code_details:
+        options["max_wallclock_seconds"] = code_details["max_wallclock_seconds"]
+        
+    return options
 
 
 def get_builder(codes, structure, parameters):
