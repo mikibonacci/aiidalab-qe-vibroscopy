@@ -30,7 +30,7 @@ def create_resource_config(code_details):
     }
     
     if "max_wallclock_seconds" in code_details:
-        options["max_wallclock_seconds"] = code_details["max_wallclock_seconds"]
+        options["options"]["max_wallclock_seconds"] = code_details["max_wallclock_seconds"]
         
     return options
 
