@@ -13,8 +13,7 @@ authors = [
 readme = "README.md"
 license = {file = "LICENSE.txt"}
 classifiers = [
-    "Development Status :: 4 Beta",
-    "Framework :: AiiDAlab QE",
+    "Development Status :: 5 - Production/Stable",
 ]
 keywords = ["aiidalab", "plugin"]
 requires-python = ">=3.8"
