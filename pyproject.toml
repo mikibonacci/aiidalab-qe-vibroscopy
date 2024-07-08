@@ -4,7 +4,8 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "aiidalab-qe-vibroscopy"
-dynamic = ["description", "version"]
+description="AiiDAlab QE plugin for vibrational spectoscopies."
+version = "1.0.0"
 authors = [
     {name = "Miki Bonacci", email = "miki.bonacci@psi.ch"},
     {name = "Andres Ortega Guerrero", email = "andres.ortega-guerrero@empa.ch"}
@@ -27,15 +28,14 @@ dependencies = [
     "kaleido",
 ]
 
-[project.scripts]
-phonopy_setup = "phonopy_setup:install_phonopy"
-
 [project.urls]
 Source = "https://github.com/mikibonacci/aiidalab-qe-vibroscopy"
-
 
 [project.entry-points.'aiida.workflows']
 "vibroscopy_app.vibro" = "aiidalab_qe_vibroscopy.workflows.vibroworkchain:VibroWorkChain"
 
 [project.entry-points.'aiidalab_qe.properties']
 "vibronic" = "aiidalab_qe_vibroscopy.app:property"
+
+[project.scripts]
+"aiidalab-qe-vibroscopy" = "aiidalab_qe_vibroscopy.__main__:cli"
