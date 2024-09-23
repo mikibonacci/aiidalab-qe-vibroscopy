@@ -143,6 +143,13 @@ class Setting(Panel):
         self.supercell_widget.layout.display = "block"
         # end Supercell.
 
+        self.symmetry_symprec = ipw.FloatText(
+            value=1e-5,
+            description="Symmetry tolerance (symprec):",
+            style={"description_width": "initial"},
+            layout={"width": "300px"},
+        )
+
         self.children = [
             ipw.VBox(
                 [
@@ -167,6 +174,7 @@ class Setting(Panel):
                 ],
             ),
             self.supercell_widget,
+            self.symmetry_symprec,
         ]
 
         super().__init__(**kwargs)
@@ -208,16 +216,19 @@ class Setting(Panel):
         return {
             "simulation_mode": self.calc_options.value,
             "supercell_selector": self.supercell,
+            "symmetry_symprec": self.symmetry_symprec.value,
         }
 
     def set_panel_value(self, input_dict):
         """Load a dictionary with the input parameters for the plugin."""
         self.calc_options.value = input_dict.get("simulation_mode", 1)
         self.supercell = input_dict.get("supercell_selector", [2, 2, 2])
+        self.symmetry_symprec.value = input_dict.get("symmetry_symprec", 1e-5)
         self._sc_x.value, self._sc_y.value, self._sc_z.value = self.supercell
 
     def reset(self):
         """Reset the panel"""
         self.calc_options.value = 1
         self.supercell = [2, 2, 2]
+        self.symmetry_symprec.value = 1e-5
         self._sc_x.value, self._sc_y.value, self._sc_z.value = self.supercell
