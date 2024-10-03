@@ -299,6 +299,21 @@ def produce_bands_weigthed_data(
         x_tick_labels = get_qpoint_labels(
             modes.qpts, cell=modes.crystal.to_spglib_cell()
         )
+
+    # duplication from euphonic/cli/utils.py
+    if args.e_min is None:
+        # Subtract small amount from min frequency - otherwise due to unit
+        # conversions binning of this frequency can vary with different
+        # architectures/lib versions, making it difficult to test
+        emin_room = 1e-5 * ureg("meV").to(modes.frequencies.units).magnitude
+        args.e_min = min(np.min(modes.frequencies.magnitude - emin_room), 0.0)
+    if args.e_max is None:
+        args.e_max = np.max(modes.frequencies.magnitude) * 1.05
+    if args.e_min >= args.e_max:
+        raise ValueError(
+            f"Maximum energy ({args.e_max}) should be greater than minimum ({args.e_min}). "
+        )
+
     modes.frequencies_unit = args.energy_unit
     ebins = _get_energy_bins(modes, args.ebins + 1, emin=args.e_min, emax=args.e_max)
 
@@ -753,12 +768,36 @@ def export_euphonic_data(node, fermi_energy=None):
 
     output_set = node.outputs.vibronic.phonon_bands
 
+    if any(not element for element in node.inputs.structure.pbc):
+        vibro_bands = node.inputs.vibronic.phonopy_bands_dict.get_dict()
+        # Group the band and band_labels
+        band = vibro_bands["band"]
+        band_labels = vibro_bands["band_labels"]
+
+        grouped_bands = [
+            item
+            for sublist in [band_labels[i : i + 2] for i in range(len(band_labels) - 1)]
+            for item in sublist
+        ]
+        grouped_q = [
+            [tuple(band[i : i + 3]), tuple(band[i + 3 : i + 6])]
+            for i in range(0, len(band) - 3, 3)
+        ]
+        q_path = {
+            "coordinates": grouped_q,
+            "labels": grouped_bands,
+            "delta_q": 0.01,  # 1/A
+        }
+    else:
+        q_path = None
+
     phonopy_calc = output_set.creator
     fc = generate_force_constant_instance(phonopy_calc)
     # bands = compute_bands(fc)
     # pdos = compute_pdos(fc)
     return {
         "fc": fc,
+        "q_path": q_path,
     }  # "bands": bands, "pdos": pdos, "thermal": None}
 
 

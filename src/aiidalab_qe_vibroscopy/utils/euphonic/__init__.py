@@ -18,6 +18,34 @@ from .euphonic_q_planes_widgets import QSectionFullWidget
 
 ###### START for detached app:
 
+# spinner for waiting time (supercell estimations)
+spinner_html = """
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+}
+
+.spinner div {
+  width: 100%;
+  height: 100%;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+</style>
+<div class="spinner">
+  <div></div>
+</div>
+"""
+
 
 # Upload buttons
 class UploadPhonopyYamlWidget(ipw.FileUpload):
@@ -111,7 +139,34 @@ class EuphonicSuperWidget(ipw.VBox):
     In between, we trigger the initialization of plots via a button.
     """
 
-    def __init__(self, mode="aiidalab-qe app plugin", fc=None):
+    def __init__(self, mode="aiidalab-qe app plugin", fc=None, q_path=None):
+        """
+        Initialize the Euphonic utility class.
+        Parameters:
+        -----------
+        mode : str, optional
+            The mode of operation, default is "aiidalab-qe app plugin".
+        fc : optional
+            Force constants, default is None.
+        q_path : optional
+            Q-path for phonon calculations, default is None. If Low-D system, this can be provided.
+            It is the same path obtained for the PhonopyCalculation of the phonopy_bands.
+        Attributes:
+        -----------
+        mode : str
+            The mode of operation.
+        upload_widget : UploadPhonopyWidget
+            Widget for uploading phonopy files.
+        fc_hdf5_content : None
+            Content of the force constants HDF5 file.
+        tab_widget : ipw.Tab
+            Tab widget for different views.
+        plot_button : ipw.Button
+            Button to initialize INS data.
+        fc : optional
+            Force constants if provided.
+        """
+
         self.mode = mode
 
         self.upload_widget = UploadPhonopyWidget()
@@ -128,6 +183,8 @@ class EuphonicSuperWidget(ipw.VBox):
         if fc:
             self.fc = fc
 
+        self.q_path = q_path
+
         self.plot_button = ipw.Button(
             description="Initialise INS data",
             icon="pencil",
@@ -136,6 +193,11 @@ class EuphonicSuperWidget(ipw.VBox):
             layout=ipw.Layout(width="auto"),
         )
         self.plot_button.on_click(self._on_first_plot_button_clicked)
+
+        self.loading_widget = ipw.HTML(
+            value=spinner_html,
+        )
+        self.loading_widget.layout.display = "none"
 
         if self.mode == "aiidalab-qe app plugin":
             self.upload_widget.layout.display = "none"
@@ -148,6 +210,7 @@ class EuphonicSuperWidget(ipw.VBox):
             children=[
                 self.upload_widget,
                 self.plot_button,
+                self.loading_widget,
                 self.tab_widget,
             ],
         )
@@ -203,10 +266,13 @@ class EuphonicSuperWidget(ipw.VBox):
     def _on_first_plot_button_clicked(self, change=None):
         # It creates the widgets
         self.plot_button.layout.display = "none"
+
+        self.loading_widget.layout.display = "block"
+
         self.fc = self._generate_force_constants()
 
         # I first initialise this widget, to then have the 0K ref for the other two.
-        singlecrystalwidget = SingleCrystalFullWidget(self.fc)
+        singlecrystalwidget = SingleCrystalFullWidget(self.fc, self.q_path)
 
         self.tab_widget.children = (
             singlecrystalwidget,
@@ -217,6 +283,8 @@ class EuphonicSuperWidget(ipw.VBox):
                 self.fc, intensity_ref_0K=singlecrystalwidget.intensity_ref_0K
             ),
         )
+
+        self.loading_widget.layout.display = "none"
 
         self.tab_widget.layout.display = "block"
 
