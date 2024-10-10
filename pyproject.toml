@@ -25,6 +25,7 @@ dependencies = [
     "pre-commit",
     "euphonic",
     "kaleido",
+    "weas-widget==0.1.4",
 ]
 
 [tool.ruff.lint]
