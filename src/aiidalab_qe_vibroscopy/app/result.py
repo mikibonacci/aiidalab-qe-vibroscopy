@@ -72,8 +72,12 @@ class Result(ResultPanel):
     """
 
     title = "Vibrational Structure"
-    workchain_label = "iraman"
+    workchain_label = "vibro"
     children_result_widget = ()
+
+    def __init__(self, node=None, **kwargs):
+        super().__init__(node=node, identifier="vibro", **kwargs)
+        self._update_view()
 
     def _update_view(self):
         children_result_widget = ()
