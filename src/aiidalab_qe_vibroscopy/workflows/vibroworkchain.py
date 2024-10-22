@@ -558,7 +558,6 @@ class VibroWorkChain(WorkChain):
 
             # MBO: I do not understand why I have to do this, but it works
             builder.phonon = builder_phonon
-            builder.phonon.symmetry = orm.Float(overrides["symmetry"])
 
             # Adding the bands and pdos inputs.
             if structure.pbc != (True, True, True):
