@@ -8,9 +8,8 @@ import numpy as np
 from IPython.display import HTML, clear_output, display
 import base64
 import json
-import nglview as nv
-from ase import Atoms
 
+from weas_widget import WeasWidget
 
 from aiida_vibroscopy.utils.broadenings import multilorentz
 
@@ -373,6 +372,20 @@ class ActiveModesWidget(ipw.VBox):
         self.output_node = output_node
         self.spectrum_type = spectrum_type
 
+        # WeasWidget configuration
+        self.guiConfig = {
+            "enabled": True,
+            "components": {
+                "atomsControl": True,
+                "buttons": True,
+                "cameraControls": True,
+            },
+            "buttons": {
+                "fullscreen": True,
+                "download": True,
+                "measurement": True,
+            },
+        }
         # VibrationalData
         vibrational_data = self.output_node.vibrational_data
         self.vibro = (
@@ -390,8 +403,6 @@ class ActiveModesWidget(ipw.VBox):
 
         # StructureData
         self.structure_ase = self.node.inputs.structure.get_ase()
-
-        self.ngl = nv.NGLWidget()
 
         modes_values = [
             f"{index + 1}: {value}"
@@ -494,7 +505,7 @@ class ActiveModesWidget(ipw.VBox):
         self._animation_widget()
         with self.animation:
             clear_output()
-            display(self.ngl)
+            display(self.weas)
 
     def _animation_widget(self):
         """Create animation widget."""
@@ -507,31 +518,27 @@ class ActiveModesWidget(ipw.VBox):
         amplitude = self.amplitude.value
         # Get the structure of the selected mode
         structure = self.structure_ase
-        # Create a trajectory
-        traj = []
-        time_array = np.linspace(0.0, 2 * np.pi, 20)
-        for time in time_array:
-            vibro_atoms = Atoms(
-                symbols=structure.symbols,
-                positions=structure.positions + amplitude * eigenvector * np.sin(time),
-                cell=structure.cell,
-                pbc=True,
-            )
-            supercell = vibro_atoms.repeat(
-                (
-                    self._supercell[0].value,
-                    self._supercell[1].value,
-                    self._supercell[2].value,
-                )
-            )
-            traj.append(supercell)
-        # Create the animation widget
-        self.ngl.clear()
-        self.ngl = nv.show_asetraj(traj)
-        self.ngl.add_unitcell()
-        # Make the animation to be set in a loop
-        self.ngl._iplayer.children[0]._playing = False
-        self.ngl._iplayer.children[0]._playing = True
-        self.ngl._iplayer.children[0]._repeat = True
-        self.ngl._set_size("400px", "400px")
-        self.ngl.center()
+
+        self.weas = WeasWidget(guiConfig=self.guiConfig)
+        self.weas.from_ase(structure)
+
+        phonon_setting = {
+            "eigenvectors": np.array(
+                [[[real_part, 0] for real_part in row] for row in eigenvector]
+            ),
+            "kpoint": [0, 0, 0],  # optional
+            "amplitude": amplitude,
+            "nframes": 20,
+            "repeat": [
+                self._supercell[0].value,
+                self._supercell[1].value,
+                self._supercell[2].value,
+            ],
+            "color": "black",
+            "radius": 0.1,
+        }
+        self.weas.avr.phonon_setting = phonon_setting
+
+        self.weas.avr.model_style = 1
+        self.weas.avr.color_type = "JMOL"
+        self.weas.avr.vf.show = True
