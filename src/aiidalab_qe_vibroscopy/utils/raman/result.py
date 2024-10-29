@@ -10,7 +10,6 @@ import base64
 import json
 
 from weas_widget import WeasWidget
-from weas_widget.utils import generate_phonon_trajectory
 
 from aiida_vibroscopy.utils.broadenings import multilorentz
 
@@ -520,19 +519,26 @@ class ActiveModesWidget(ipw.VBox):
         # Get the structure of the selected mode
         structure = self.structure_ase
 
-        trajectory = generate_phonon_trajectory(
-            atoms=structure,
-            eigenvectors=eigenvector,
-            amplitude=amplitude,
-            repeat=[
+        self.weas = WeasWidget(guiConfig=self.guiConfig)
+        self.weas.from_ase(structure)
+
+        phonon_setting = {
+            "eigenvectors": np.array(
+                [[[real_part, 0] for real_part in row] for row in eigenvector]
+            ),
+            "kpoint": [0, 0, 0],  # optional
+            "amplitude": amplitude,
+            "nframes": 20,
+            "repeat": [
                 self._supercell[0].value,
                 self._supercell[1].value,
                 self._supercell[2].value,
             ],
-        )
-        self.weas = WeasWidget(guiConfig=self.guiConfig)
-        self.weas.from_ase(trajectory)
-        self.weas.avr.vf.settings = [
-            {"origins": "positions", "vectors": "movement", "radius": 0.1}
-        ]
+            "color": "black",
+            "radius": 0.1,
+        }
+        self.weas.avr.phonon_setting = phonon_setting
+
+        self.weas.avr.model_style = 1
+        self.weas.avr.color_type = "JMOL"
         self.weas.avr.vf.show = True
