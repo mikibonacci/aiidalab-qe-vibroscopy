@@ -1,7 +1,13 @@
-from aiidalab_qe_vibroscopy.app.settings import Setting
+from aiidalab_qe.common.panel import PluginOutline
+
+from aiidalab_qe_vibroscopy.app.model import VibroConfigurationSettingsModel
+from aiidalab_qe_vibroscopy.app.settings import VibroConfigurationSettingPanel
+
+
+# from aiidalab_qe_vibroscopy.app.settings import Setting
 from aiidalab_qe_vibroscopy.app.workchain import workchain_and_builder
-from aiidalab_qe_vibroscopy.app.result import Result
-from aiidalab_qe.common.panel import OutlinePanel
+# from aiidalab_qe_vibroscopy.app.result import Result
+# from aiidalab_qe.common.panel import OutlinePanel
 
 from aiidalab_qe.common.widgets import (
     QEAppComputationalResourcesWidget,
@@ -9,10 +15,18 @@ from aiidalab_qe.common.widgets import (
 )
 
 
-class Outline(OutlinePanel):
-    title = "Vibrational properties"
-    # description = "IR and Raman spectra; you may also select phononic and dielectric properties"
+class VibroPluginOutline(PluginOutline):
+    title = "Vibrational Spectroscopy (VIBRO)"
 
+
+property = {
+    "outline": VibroPluginOutline,
+    "configuration": {
+        "panel": VibroConfigurationSettingPanel,
+        "model": VibroConfigurationSettingsModel,
+    },
+    "workchain": workchain_and_builder,
+}
 
 PhononWorkChainPwCode = PwCodeResourceSetupWidget(
     description="pw.x for phonons",  # code for the PhononWorkChain workflow",
@@ -30,14 +44,14 @@ PhonopyCalculationCode = QEAppComputationalResourcesWidget(
     default_calc_job_plugin="phonopy.phonopy",
 )
 
-property = {
-    "outline": Outline,
-    "code": {
-        "phonon": PhononWorkChainPwCode,
-        "dielectric": DielectricWorkChainPwCode,
-        "phonopy": PhonopyCalculationCode,
-    },
-    "setting": Setting,
-    "workchain": workchain_and_builder,
-    "result": Result,
-}
+# property = {
+#     "outline": Outline,
+#     "code": {
+#         "phonon": PhononWorkChainPwCode,
+#         "dielectric": DielectricWorkChainPwCode,
+#         "phonopy": PhonopyCalculationCode,
+#     },
+#     "setting": Setting,
+#     "workchain": workchain_and_builder,
+#     "result": Result,
+# }
