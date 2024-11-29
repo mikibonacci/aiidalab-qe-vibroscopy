@@ -4,6 +4,41 @@ import numpy as np
 from aiidalab_qe.common.mixins import HasInputStructure
 from aiidalab_qe.common.panel import ConfigurationSettingsModel
 
+from aiida_phonopy.data.preprocess import PreProcessData
+from aiida.plugins import DataFactory
+
+HubbardStructureData = DataFactory("quantumespresso.hubbard_structure")
+from aiida_vibroscopy.calculations.spectra_utils import get_supercells_for_hubbard
+from aiida_vibroscopy.workflows.phonons.base import get_supercell_hubbard_structure
+
+# spinner for waiting time (supercell estimations)
+spinner_html = """
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+}
+
+.spinner div {
+  width: 100%;
+  height: 100%;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+</style>
+<div class="spinner">
+  <div></div>
+</div>
+"""
+
 
 class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStructure):
     dependencies = [
@@ -36,6 +71,7 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
         trait=tl.Int(),
         default_value=[2, 2, 2],
     )
+    supercell_number_estimator = tl.Unicode("?")
 
     def get_model_state(self):
         return {
@@ -56,6 +92,9 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
             self.symmetry_symprec = 1e-5
             self.supercell = [2, 2, 2]
             self.supercell_x, self.supercell_y, self.supercell_z = self.supercell
+            self.supercell_number_estimator = self._get_default(
+                "supercell_number_estimator"
+            )
 
     def _get_default(self, trait):
         return self._defaults.get(trait, self.traits()[trait].default_value)
@@ -102,7 +141,6 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
             # Sync the updated values to the supercell list
             self.supercell = [self.supercell_x, self.supercell_y, self.supercell_z]
 
-            # self._activate_estimate_supercells()
         else:
             return
 
@@ -121,3 +159,40 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
             if self.input_structure.pbc != (True, False, False)
             else 1e-3
         )
+        self.supercell_number_estimator = self._get_default(
+            "supercell_number_estimator"
+        )
+
+    def _estimate_supercells(self, _=None):
+        if self.input_structure:
+            self.supercell_number_estimator = spinner_html
+
+            preprocess_data = PreProcessData(
+                structure=self.input_structure,
+                supercell_matrix=[
+                    [self.supercell_x, 0, 0],
+                    [0, self.supercell_y, 0],
+                    [0, 0, self.supercell_z],
+                ],
+                symprec=self.symmetry_symprec,
+                distinguish_kinds=False,
+                is_symmetry=True,
+            )
+
+            if isinstance(self.input_structure, HubbardStructureData):
+                supercell = get_supercell_hubbard_structure(
+                    self.input_structure,
+                    self.input_structure,
+                    metadata={"store_provenance": False},
+                )
+                supercells = get_supercells_for_hubbard(
+                    preprocess_data=preprocess_data,
+                    ref_structure=supercell,
+                    metadata={"store_provenance": False},
+                )
+            else:
+                supercells = preprocess_data.get_supercells_with_displacements()
+
+            self.supercell_number_estimator = f"{len(supercells)}"
+
+        return

@@ -223,15 +223,6 @@ class VibroConfigurationSettingPanel(
         # supercell reset reaction
         self.supercell_reset_button.on_click(self._model.supercell_reset)
 
-        # Estimate supercell button
-        self.supercell_estimate_button = ipw.Button(
-            description="Estimate number of supercells ➡",
-            disabled=False,
-            layout=ipw.Layout(width="240px", display="none"),
-            button_style="info",
-            tooltip="Number of supercells for phonons calculations;\nwarning: for large systems, this may take some time.",
-        )
-
         self.symmetry_symprec_reset_button = ipw.Button(
             description="Reset symprec",
             disabled=False,
@@ -241,16 +232,27 @@ class VibroConfigurationSettingPanel(
         # supercell reset reaction
         self.symmetry_symprec_reset_button.on_click(self._model.reset_symprec)
 
-        # supercell reset reaction
-        # self.supercell_estimate_button.on_click(self._estimate_supercells)
-
         # Estimate the number of supercells for frozen phonons.
         self.supercell_number_estimator = ipw.HTML(
-            # description="Number of supercells:",
-            value="?",
             style={"description_width": "initial"},
             layout=ipw.Layout(display="none"),
         )
+        ipw.link(
+            (self._model, "supercell_number_estimator"),
+            (self.supercell_number_estimator, "value"),
+        )
+
+        # Estimate supercell button
+        self.supercell_estimate_button = ipw.Button(
+            description="Estimate number of supercells ➡",
+            disabled=False,
+            layout=ipw.Layout(width="240px", display="none"),
+            button_style="info",
+            tooltip="Number of supercells for phonons calculations;\nwarning: for large systems, this may take some time.",
+        )
+
+        # supercell reset reaction
+        self.supercell_estimate_button.on_click(self._model._estimate_supercells)
 
         ## end supercell hint.
 
@@ -308,6 +310,7 @@ class VibroConfigurationSettingPanel(
         ]
 
         self.rendered = True
+        self._on_change_simulation_type({"new": 0})
 
     def _on_input_structure_change(self, _):
         self.refresh(specific="structure")
@@ -317,127 +320,15 @@ class VibroConfigurationSettingPanel(
         self.supercell_widget.layout.display = (
             "block" if self._model.simulation_type in [1, 3] else "none"
         )
-
-        # we define a block for the estimation of the supercell if we ask for hint,
-        # so that we call the estimator only at the end of the supercell hint generator,
-        # and now each time after the x, y, z generation (i.e., we don't lose time).
-        # see the methods below.
-        # self.block = False
-
-    # @tl.observe("input_structure")
-    # def _update_input_structure(self, change):
-    #     if self.input_structure:
-    #         for direction, periodic in zip(
-    #             [self._sc_x, self._sc_y, self._sc_z], self.input_structure.pbc
-    #         ):
-    #             direction.value = 2 if periodic else 1
-    #             direction.disabled = False if periodic else True
-
-    #         self.supercell_number_estimator.layout.display = (
-    #             "block" if len(self.input_structure.sites) <= 30 else "none"
-    #         )
-    #         self.supercell_estimate_button.layout.display = (
-    #             "block" if len(self.input_structure.sites) <= 30 else "none"
-    #         )
-    #     else:
-    #         self.supercell_number_estimator.layout.display = "none"
-    #         self.supercell_estimate_button.layout.display = "none"
-
-    # def _suggest_supercell(self, _=None):
-    #     """
-    #     minimal supercell size for phonons, imposing a minimum lattice parameter of 15 A.
-    #     """
-    #     if self.input_structure:
-    #         s = self.input_structure.get_ase()
-    #         suggested_3D = 15 // np.array(s.cell.cellpar()[:3]) + 1
-
-    #         # if disabled, it means that it is a non-periodic direction.
-    #         # here we manually unobserve the `_activate_estimate_supercells`, so it is faster
-    #         # and only compute when all the three directions are updated
-    #         self.block = True
-    #         for direction, suggested, original in zip(
-    #             [self._sc_x, self._sc_y, self._sc_z], suggested_3D, s.cell.cellpar()[:3]
-    #         ):
-    #             direction.value = suggested if not direction.disabled else 1
-    #         self.block = False
-    #         self._activate_estimate_supercells()
-    #     else:
-    #         return
-
-    # def _activate_estimate_supercells(self, _=None):
-    #     self.supercell_estimate_button.disabled = False
-    #     self.supercell_number_estimator.value = "?"
-
-    # # @tl.observe("input_structure")
-    # @disable_print
-    # def _estimate_supercells(self, _=None):
-    #     """_summary_
-
-    #     Estimate the number of supercells to be computed for frozen phonon calculation.
-    #     """
-    #     if self.block:
-    #         return
-
-    #     symprec_value = self.symmetry_symprec.value
-
-    #     self.symmetry_symprec.value = max(1e-5, min(symprec_value, 1))
-
-    #     self.supercell_number_estimator.value = spinner_html
-
-    #     from aiida_phonopy.data.preprocess import PreProcessData
-
-    #     if self.input_structure:
-    #         preprocess_data = PreProcessData(
-    #             structure=self.input_structure,
-    #             supercell_matrix=[
-    #                 [self._sc_x.value, 0, 0],
-    #                 [0, self._sc_y.value, 0],
-    #                 [0, 0, self._sc_z.value],
-    #             ],
-    #             symprec=self.symmetry_symprec.value,
-    #             distinguish_kinds=False,
-    #             is_symmetry=True,
-    #         )
-
-    #         supercells = preprocess_data.get_supercells_with_displacements()
-
-    #         # for now, we comment the following part, as the HubbardSD is generated in the submission step.
-    #         """if isinstance(self.input_structure, HubbardStructureData):
-    #             from aiida_vibroscopy.calculations.spectra_utils import get_supercells_for_hubbard
-    #             from aiida_vibroscopy.workflows.phonons.base import get_supercell_hubbard_structure
-    #             supercell = get_supercell_hubbard_structure(
-    #                 self.input_structure,
-    #                 self.input_structure,
-    #                 metadata={"store_provenance": False},
-    #             )
-    #             supercells = get_supercells_for_hubbard(
-    #                 preprocess_data=preprocess_data,
-    #                 ref_structure=supercell,
-    #                 metadata={"store_provenance": False},
-    #             )
-
-    #         else:
-    #             supercells = preprocess_data.get_supercells_with_displacements()
-    #         """
-    #         self.supercell_number_estimator.value = f"{len(supercells)}"
-    #         self.supercell_estimate_button.disabled = True
-
-    #     return
-
-    # def _reset_supercell(self, _=None):
-    #     if self.input_structure is not None:
-    #         reset_supercell = []
-    #         self.block = True
-    #         for direction, periodic in zip(
-    #             [self._sc_x, self._sc_y, self._sc_z], self.input_structure.pbc
-    #         ):
-    #             reset_supercell.append(2 if periodic else 1)
-    #         (self._sc_x.value, self._sc_y.value, self._sc_z.value) = reset_supercell
-    #         self.block = False
-    #         self._activate_estimate_supercells()
-    #     return
-
-    # def _reset_symprec(self, _=None):
-    #     self.symmetry_symprec.value = 1e-5
-    #     self._activate_estimate_supercells()
-    #     return
+        self.supercell_number_estimator.layout.display = (
+            "block"
+            if self._model.simulation_type in [1, 3]
+            and len(self._model.input_structure.sites) <= 30
+            else "none"
+        )
+        self.supercell_estimate_button.layout.display = (
+            "block"
+            if self._model.simulation_type in [1, 3]
+            and len(self._model.input_structure.sites) <= 30
+            else "none"
+        )
