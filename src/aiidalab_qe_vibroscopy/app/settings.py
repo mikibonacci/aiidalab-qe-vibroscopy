@@ -12,58 +12,9 @@ import ipywidgets as ipw
 from aiidalab_qe.common.panel import ConfigurationSettingsPanel
 from aiidalab_qe_vibroscopy.app.model import VibroConfigurationSettingsModel
 
-import sys
-import os
-
 from aiida.plugins import DataFactory
 
 HubbardStructureData = DataFactory("quantumespresso.hubbard_structure")
-
-# spinner for waiting time (supercell estimations)
-spinner_html = """
-<style>
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.spinner {
-  display: inline-block;
-  width: 15px;
-  height: 15px;
-}
-
-.spinner div {
-  width: 100%;
-  height: 100%;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-</style>
-<div class="spinner">
-  <div></div>
-</div>
-"""
-
-
-def disable_print(func):
-    def wrapper(*args, **kwargs):
-        # Save the current standard output
-        original_stdout = sys.stdout
-        # Redirect standard output to os.devnull
-        sys.stdout = open(os.devnull, "w")
-        try:
-            # Call the function
-            result = func(*args, **kwargs)
-        finally:
-            # Restore the original standard output
-            sys.stdout.close()
-            sys.stdout = original_stdout
-        return result
-
-    return wrapper
 
 
 class VibroConfigurationSettingPanel(

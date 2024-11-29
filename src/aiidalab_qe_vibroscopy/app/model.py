@@ -6,6 +6,8 @@ from aiidalab_qe.common.panel import ConfigurationSettingsModel
 
 from aiida_phonopy.data.preprocess import PreProcessData
 from aiida.plugins import DataFactory
+import sys
+import os
 
 HubbardStructureData = DataFactory("quantumespresso.hubbard_structure")
 from aiida_vibroscopy.calculations.spectra_utils import get_supercells_for_hubbard
@@ -38,6 +40,24 @@ spinner_html = """
   <div></div>
 </div>
 """
+
+
+def disable_print(func):
+    def wrapper(*args, **kwargs):
+        # Save the current standard output
+        original_stdout = sys.stdout
+        # Redirect standard output to os.devnull
+        sys.stdout = open(os.devnull, "w")
+        try:
+            # Call the function
+            result = func(*args, **kwargs)
+        finally:
+            # Restore the original standard output
+            sys.stdout.close()
+            sys.stdout = original_stdout
+        return result
+
+    return wrapper
 
 
 class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStructure):
@@ -163,6 +183,7 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
             "supercell_number_estimator"
         )
 
+    @disable_print
     def _estimate_supercells(self, _=None):
         if self.input_structure:
             self.supercell_number_estimator = spinner_html
