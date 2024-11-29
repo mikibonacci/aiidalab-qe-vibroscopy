@@ -136,7 +136,7 @@ class VibroConfigurationSettingPanel(
             "value",
         )
 
-        self.symmetry_symprec = ipw.FloatText(
+        self.symmetry_symprec = ipw.BoundedFloatText(
             max=1,
             min=1e-7,
             step=1e-4,
@@ -231,6 +231,16 @@ class VibroConfigurationSettingPanel(
             button_style="info",
             tooltip="Number of supercells for phonons calculations;\nwarning: for large systems, this may take some time.",
         )
+
+        self.symmetry_symprec_reset_button = ipw.Button(
+            description="Reset symprec",
+            disabled=False,
+            layout=ipw.Layout(width="125px"),
+            button_style="warning",
+        )
+        # supercell reset reaction
+        self.symmetry_symprec_reset_button.on_click(self._model.reset_symprec)
+
         # supercell reset reaction
         # self.supercell_estimate_button.on_click(self._estimate_supercells)
 
@@ -264,14 +274,6 @@ class VibroConfigurationSettingPanel(
         # self.symmetry_symprec.observe(self._activate_estimate_supercells, "value")
 
         # reset supercell
-        self.symmetry_symprec_reset_button = ipw.Button(
-            description="Reset symprec",
-            disabled=False,
-            layout=ipw.Layout(width="125px"),
-            button_style="warning",
-        )
-        # supercell reset reaction
-        # self.symmetry_symprec_reset_button.on_click(self._reset_symprec)
 
         self.children = [
             ipw.VBox(

@@ -114,3 +114,10 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
         if not self.disable_z:
             self.supercell_z = self._get_default("supercell_x")
         self.supercell = [self.supercell_x, self.supercell_y, self.supercell_z]
+
+    def reset_symprec(self, _=None):
+        self.symmetry_symprec = (
+            self._get_default("symmetry_symprec")
+            if self.input_structure.pbc != (True, False, False)
+            else 1e-3
+        )
