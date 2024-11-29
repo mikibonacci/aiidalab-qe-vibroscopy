@@ -131,6 +131,10 @@ class VibroConfigurationSettingPanel(
             (self._model, "simulation_type"),
             (self.simulation_type, "value"),
         )
+        self.simulation_type.observe(
+            self._on_change_simulation_type,
+            "value",
+        )
 
         self.symmetry_symprec = ipw.FloatText(
             max=1,
@@ -182,37 +186,6 @@ class VibroConfigurationSettingPanel(
             (self.supercell_z, "disabled"),
         )
 
-        # self.simulation_type.observe(self._display_supercell, names="value")
-        # self.supercell = [2, 2, 2]
-
-        # def change_supercell(_=None):
-        #     self.supercell = [
-        #         self._sc_x.value,
-        #         self._sc_y.value,
-        #         self._sc_z.value,
-        #     ]
-
-        # if self.input_structure:
-        #     pbc = self.input_structure.pbc
-        # else:
-        #     pbc = (True, True, True)
-
-        # for elem, periodic in zip(["x", "y", "z"], pbc):
-        #     # periodic allows support of hints also for 2D, 1D.
-        #     setattr(
-        #         self,
-        #         "_sc_" + elem,
-        #         ipw.BoundedIntText(
-        #             value=2 if periodic else 1,
-        #             min=1,
-        #             layout={"width": "40px"},
-        #             disabled=False if periodic else True,
-        #         ),
-        #     )
-        # for elem in [self._sc_x, self._sc_y, self._sc_z]:
-        #     elem.observe(change_supercell, names="value")
-        #     elem.observe(self._activate_estimate_supercells, names="value")
-
         self.supercell_selector = ipw.HBox(
             children=[
                 ipw.HTML(
@@ -236,8 +209,9 @@ class VibroConfigurationSettingPanel(
             layout=ipw.Layout(width="100px"),
             button_style="info",
         )
+
         # supercell hint (15A lattice params)
-        # self.supercell_hint_button.on_click(self._suggest_supercell)
+        self.supercell_hint_button.on_click(self._model.suggest_supercell)
 
         # reset supercell
         self.supercell_reset_button = ipw.Button(
@@ -247,7 +221,7 @@ class VibroConfigurationSettingPanel(
             button_style="warning",
         )
         # supercell reset reaction
-        # self.supercell_reset_button.on_click(self._reset_supercell)
+        self.supercell_reset_button.on_click(self._model.supercell_reset)
 
         # Estimate supercell button
         self.supercell_estimate_button = ipw.Button(
@@ -337,6 +311,10 @@ class VibroConfigurationSettingPanel(
         self.refresh(specific="structure")
         self._model.on_input_structure_change()
 
+    def _on_change_simulation_type(self, _):
+        self.supercell_widget.layout.display = (
+            "block" if self._model.simulation_type in [1, 3] else "none"
+        )
 
         # we define a block for the estimation of the supercell if we ask for hint,
         # so that we call the estimator only at the end of the supercell hint generator,
@@ -362,13 +340,6 @@ class VibroConfigurationSettingPanel(
     #     else:
     #         self.supercell_number_estimator.layout.display = "none"
     #         self.supercell_estimate_button.layout.display = "none"
-
-    # def _display_supercell(self, change):
-    #     selected = change["new"]
-    #     if selected in [1, 3]:
-    #         self.supercell_widget.layout.display = "block"
-    #     else:
-    #         self.supercell_widget.layout.display = "none"
 
     # def _suggest_supercell(self, _=None):
     #     """
@@ -468,25 +439,3 @@ class VibroConfigurationSettingPanel(
     #     self.symmetry_symprec.value = 1e-5
     #     self._activate_estimate_supercells()
     #     return
-
-    # def get_panel_value(self):
-    #     """Return a dictionary with the input parameters for the plugin."""
-    #     return {
-    #         "simulation_mode": self.calc_options.value,
-    #         "supercell_selector": self.supercell,
-    #         "symmetry_symprec": self.symmetry_symprec.value,
-    #     }
-
-    # def set_panel_value(self, input_dict):
-    #     """Load a dictionary with the input parameters for the plugin."""
-    #     self.calc_options.value = input_dict.get("simulation_mode", 1)
-    #     self.supercell = input_dict.get("supercell_selector", [2, 2, 2])
-    #     self.symmetry_symprec.value = input_dict.get("symmetry_symprec", 1e-5)
-    #     self._sc_x.value, self._sc_y.value, self._sc_z.value = self.supercell
-
-    # def reset(self):
-    #     """Reset the panel"""
-    #     self.calc_options.value = 1
-    #     self.supercell = [2, 2, 2]
-    #     self.symmetry_symprec.value = 1e-5
-    #     self._sc_x.value, self._sc_y.value, self._sc_z.value = self.supercell

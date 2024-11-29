@@ -1,6 +1,6 @@
 import traitlets as tl
 
-
+import numpy as np
 from aiidalab_qe.common.mixins import HasInputStructure
 from aiidalab_qe.common.panel import ConfigurationSettingsModel
 
@@ -26,7 +26,7 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
     supercell_y = tl.Int(2)
     supercell_z = tl.Int(2)
 
-    #Control for disable the supercell widget
+    # Control for disable the supercell widget
 
     disable_x = tl.Bool(False)
     disable_y = tl.Bool(False)
@@ -37,30 +37,80 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
         default_value=[2, 2, 2],
     )
 
+    def get_model_state(self):
+        return {
+            "simulation_type": self.simulation_type,
+            "symmetry_symprec": self.symmetry_symprec,
+            "supercell": self.supercell,
+        }
+
+    def set_model_state(self, parameters: dict):
+        self.simulation_type = parameters.get("simulation_type", 1)
+        self.symmetry_symprec = parameters.get("symmetry_symprec", 1e-5)
+        self.supercell = parameters.get("supercell", [2, 2, 2])
+        self.supercell_x, self.supercell_y, self.supercell_z = self.supercell
+
+    def reset(self):
+        with self.hold_trait_notifications():
+            self.simulation_type = 1
+            self.symmetry_symprec = 1e-5
+            self.supercell = [2, 2, 2]
+            self.supercell_x, self.supercell_y, self.supercell_z = self.supercell
+
     def _get_default(self, trait):
         return self._defaults.get(trait, self.traits()[trait].default_value)
-    
-    def on_input_structure_change(self, _=None):
 
+    def on_input_structure_change(self, _=None):
         if not self.input_structure:
             self._get_default()
 
         else:
-
             self.disable_x, self.disable_y, self.disable_z = True, True, True
             pbc = self.input_structure.pbc
 
-            if pbc == (False,False, False):
+            if pbc == (False, False, False):
                 # No periodicity; fully disable and reset supercell
                 self.supercell_x = self.supercell_y = self.supercell_z = 1
             elif pbc == (True, False, False):
                 self.supercell_y = self.supercell_z = 1
                 self.disable_x = False
+                self.symmetry_symprec = 1e-3
             elif pbc == (True, True, False):
                 self.supercell_z = 1
                 self.disable_x = self.disable_y = False
             elif pbc == (True, True, True):
                 self.disable_x = self.disable_y = self.disable_z = False
 
-        
             self.supercell = [self.supercell_x, self.supercell_y, self.supercell_z]
+
+    def suggest_supercell(self, _=None):
+        """
+        minimal supercell size for phonons, imposing a minimum lattice parameter of 15 A.
+        """
+        if self.input_structure and self.input_structure.pbc != (False, False, False):
+            ase_structure = self.input_structure.get_ase()
+            suggested_3D = 15 // np.array(ase_structure.cell.cellpar()[:3]) + 1
+
+            # Update only dimensions that are not disabled
+            if not self.disable_x:
+                self.supercell_x = int(suggested_3D[0])
+            if not self.disable_y:
+                self.supercell_y = int(suggested_3D[1])
+            if not self.disable_z:
+                self.supercell_z = int(suggested_3D[2])
+
+            # Sync the updated values to the supercell list
+            self.supercell = [self.supercell_x, self.supercell_y, self.supercell_z]
+
+            # self._activate_estimate_supercells()
+        else:
+            return
+
+    def supercell_reset(self, _=None):
+        if not self.disable_x:
+            self.supercell_x = self._get_default("supercell_x")
+        if not self.disable_y:
+            self.supercell_y = self._get_default("supercell_x")
+        if not self.disable_z:
+            self.supercell_z = self._get_default("supercell_x")
+        self.supercell = [self.supercell_x, self.supercell_y, self.supercell_z]
