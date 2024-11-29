@@ -72,10 +72,13 @@ class VibroConfigurationSettingPanel(
     title = "Vibrational Settings"
     identifier = "vibronic"
 
-    # input_structure = tl.Instance(orm.StructureData, allow_none=True)
-
     def __init__(self, model: VibroConfigurationSettingsModel, **kwargs):
         super().__init__(model, **kwargs)
+
+        self._model.observe(
+            self._on_input_structure_change,
+            "input_structure",
+        )
 
     def render(self):
         if self.rendered:
@@ -159,12 +162,24 @@ class VibroConfigurationSettingPanel(
             (self.supercell_x, "value"),
         )
         ipw.link(
+            (self._model, "disable_x"),
+            (self.supercell_x, "disabled"),
+        )
+        ipw.link(
             (self._model, "supercell_y"),
             (self.supercell_y, "value"),
         )
         ipw.link(
+            (self._model, "disable_y"),
+            (self.supercell_y, "disabled"),
+        )
+        ipw.link(
             (self._model, "supercell_z"),
             (self.supercell_z, "value"),
+        )
+        ipw.link(
+            (self._model, "disable_z"),
+            (self.supercell_z, "disabled"),
         )
 
         # self.simulation_type.observe(self._display_supercell, names="value")
@@ -317,6 +332,11 @@ class VibroConfigurationSettingPanel(
         ]
 
         self.rendered = True
+
+    def _on_input_structure_change(self, _):
+        self.refresh(specific="structure")
+        self._model.on_input_structure_change()
+
 
         # we define a block for the estimation of the supercell if we ask for hint,
         # so that we call the estimator only at the end of the supercell hint generator,

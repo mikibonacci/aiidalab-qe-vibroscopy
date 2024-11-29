@@ -26,6 +26,12 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
     supercell_y = tl.Int(2)
     supercell_z = tl.Int(2)
 
+    #Control for disable the supercell widget
+
+    disable_x = tl.Bool(False)
+    disable_y = tl.Bool(False)
+    disable_z = tl.Bool(False)
+
     supercell = tl.List(
         trait=tl.Int(),
         default_value=[2, 2, 2],
@@ -33,3 +39,28 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
 
     def _get_default(self, trait):
         return self._defaults.get(trait, self.traits()[trait].default_value)
+    
+    def on_input_structure_change(self, _=None):
+
+        if not self.input_structure:
+            self._get_default()
+
+        else:
+
+            self.disable_x, self.disable_y, self.disable_z = True, True, True
+            pbc = self.input_structure.pbc
+
+            if pbc == (False,False, False):
+                # No periodicity; fully disable and reset supercell
+                self.supercell_x = self.supercell_y = self.supercell_z = 1
+            elif pbc == (True, False, False):
+                self.supercell_y = self.supercell_z = 1
+                self.disable_x = False
+            elif pbc == (True, True, False):
+                self.supercell_z = 1
+                self.disable_x = self.disable_y = False
+            elif pbc == (True, True, True):
+                self.disable_x = self.disable_y = self.disable_z = False
+
+        
+            self.supercell = [self.supercell_x, self.supercell_y, self.supercell_z]
