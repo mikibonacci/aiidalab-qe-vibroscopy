@@ -43,16 +43,13 @@ def export_iramanworkchain_data(node):
     We have multiple choices: IR, RAMAN.
     """
 
-    if "vibronic" not in node.outputs:
-        return None
+    if "iraman" in node:
+        output_node = node.iraman
+    elif "harmonic" in node:
+        output_node = node.harmonic
     else:
-        if "iraman" in node.outputs.vibronic:
-            output_node = node.outputs.vibronic.iraman
-        elif "harmonic" in node.outputs.vibronic:
-            output_node = node.outputs.vibronic.harmonic
-        else:
-            # we have raman and ir only if we run IRamanWorkChain or HarmonicWorkChain
-            return None
+        # we have raman and ir only if we run IRamanWorkChain or HarmonicWorkChain
+        return None
 
     if "vibrational_data" in output_node:
         # We enable the possibility to provide both spectra.

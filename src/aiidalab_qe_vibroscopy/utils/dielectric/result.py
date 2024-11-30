@@ -59,23 +59,18 @@ def get_priority_tensor(filtered_node):
 
 
 def export_dielectric_data(node):
-    if "vibronic" not in node.outputs:
-        return None
-
-    if not any(
-        key in node.outputs.vibronic for key in ["iraman", "dielectric", "harmonic"]
-    ):
+    if not any(key in node for key in ["iraman", "dielectric", "harmonic"]):
         return None
 
     else:
-        if "iraman" in node.outputs.vibronic:
-            vibrational_data = node.outputs.vibronic.iraman.vibrational_data
+        if "iraman" in node:
+            vibrational_data = node.iraman.vibrational_data
 
-        elif "harmonic" in node.outputs.vibronic:
-            vibrational_data = node.outputs.vibronic.harmonic.vibrational_data
+        elif "harmonic" in node:
+            vibrational_data = node.harmonic.vibrational_data
 
-        elif "dielectric" in node.outputs.vibronic:
-            tensor_data = node.outputs.vibronic.dielectric
+        elif "dielectric" in node:
+            tensor_data = node.dielectric
             output_data = get_priority_tensor(tensor_data)
             dielectric_tensor = output_data.get_array("dielectric").round(
                 6

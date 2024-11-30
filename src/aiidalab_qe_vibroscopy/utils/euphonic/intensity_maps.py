@@ -759,17 +759,13 @@ def generate_force_constant_instance(
 
 
 def export_euphonic_data(node, fermi_energy=None):
-    if "vibronic" not in node.outputs:
-        # Not a phonon calculation
+    if "phonon_bands" not in node.outputs:
         return None
-    else:
-        if "phonon_bands" not in node.outputs.vibronic:
-            return None
 
-    output_set = node.outputs.vibronic.phonon_bands
+    output_set = node.outputs.phonon_bands
 
     if any(not element for element in node.inputs.structure.pbc):
-        vibro_bands = node.inputs.vibronic.phonopy_bands_dict.get_dict()
+        vibro_bands = node.inputs.phonopy_bands_dict.get_dict()
         # Group the band and band_labels
         band = vibro_bands["band"]
         band_labels = vibro_bands["band_labels"]
