@@ -1,24 +1,30 @@
 from aiidalab_qe.common.mvc import Model
 import traitlets as tl
-
+from aiida.common.extendeddicts import AttributeDict
 from aiidalab_qe_vibroscopy.utils.dielectric.result import NumpyEncoder
 import numpy as np
 import base64
 import json
 from IPython.display import display
+from aiidalab_qe_vibroscopy.utils.dielectric.result import export_dielectric_data
 
 
 class DielectricModel(Model):
-    dielectric_data = {}
+    vibro = tl.Instance(AttributeDict, allow_none=True)
 
     site_selector_options = tl.List(
         trait=tl.Tuple((tl.Unicode(), tl.Int())),
     )
+    dielectric_data = {}
 
     dielectric_tensor_table = tl.Unicode("")
     born_charges_table = tl.Unicode("")
     raman_tensors_table = tl.Unicode("")
     site = tl.Int()
+
+    def fetch_data(self):
+        """Fetch the dielectric data from the VibroWorkChain"""
+        self.dielectric_data = export_dielectric_data(self.vibro)
 
     def set_initial_values(self):
         """Set the initial values for the model."""

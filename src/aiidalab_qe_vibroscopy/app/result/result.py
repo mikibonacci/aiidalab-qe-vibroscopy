@@ -27,7 +27,7 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
         )
 
         tab_data = []
-        # vibro_node = self._model.get_vibro_node()
+        vibro_node = self._model.get_vibro_node()
 
         if self._model.needs_phonons_tab():
             tab_data.append(("Phonons", ipw.HTML("phonon_data")))
@@ -35,12 +35,13 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
         if self._model.needs_raman_tab():
             tab_data.append(("Raman", ipw.HTML("raman_data")))
 
-        dielectric_data = self._model.needs_dielectric_tab()
+        needs_dielectri_tab = self._model.needs_dielectric_tab()
 
-        if dielectric_data:
+        if needs_dielectri_tab:
             dielectric_model = DielectricModel()
             dielectric_widget = DielectricWidget(
-                model=dielectric_model, dielectric_data=dielectric_data
+                model=dielectric_model,
+                node=vibro_node,
             )
             tab_data.append(("Dielectric Properties", dielectric_widget))
 

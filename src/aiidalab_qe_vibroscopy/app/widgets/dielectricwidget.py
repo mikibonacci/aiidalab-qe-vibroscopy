@@ -8,7 +8,7 @@ class DielectricWidget(ipw.VBox):
     Widget for displaying dielectric properties results
     """
 
-    def __init__(self, model: DielectricModel, dielectric_data: None, **kwargs):
+    def __init__(self, model: DielectricModel, node: None, **kwargs):
         super().__init__(
             children=[LoadingWidget("Loading widgets")],
             **kwargs,
@@ -16,7 +16,7 @@ class DielectricWidget(ipw.VBox):
         self._model = model
 
         self.rendered = False
-        self._model.dielectric_data = dielectric_data
+        self._model.vibro = node
 
     def render(self):
         if self.rendered:
@@ -100,6 +100,7 @@ class DielectricWidget(ipw.VBox):
         self._initial_view()
 
     def _initial_view(self):
+        self._model.fetch_data()
         self._model.set_initial_values()
         self.dielectric_tensor_table.layout = ipw.Layout(width="300px", height="auto")
         self.born_charges_table.layout = ipw.Layout(width="300px", height="auto")

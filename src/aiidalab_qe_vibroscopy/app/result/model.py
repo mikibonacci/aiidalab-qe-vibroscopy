@@ -1,7 +1,7 @@
 from aiidalab_qe.common.panel import ResultsModel
 import traitlets as tl
 
-from aiidalab_qe_vibroscopy.utils.dielectric.result import export_dielectric_data
+
 from aiidalab_qe_vibroscopy.utils.raman.result import export_iramanworkchain_data
 from aiidalab_qe_vibroscopy.utils.phonons.result import export_phononworkchain_data
 from aiidalab_qe_vibroscopy.utils.euphonic import export_euphonic_data
@@ -18,7 +18,10 @@ class VibroResultsModel(ResultsModel):
         return self._get_child_outputs()
 
     def needs_dielectric_tab(self):
-        return export_dielectric_data(self.get_vibro_node())
+        node = self.get_vibro_node()
+        if not any(key in node for key in ["iraman", "dielectric", "harmonic"]):
+            return False
+        return True
 
     def needs_raman_tab(self):
         return export_iramanworkchain_data(self.get_vibro_node())
