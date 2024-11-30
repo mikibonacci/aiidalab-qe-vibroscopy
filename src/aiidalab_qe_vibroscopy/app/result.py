@@ -9,7 +9,6 @@ from IPython.display import display
 import numpy as np
 
 from ..utils.raman.result import export_iramanworkchain_data
-from ..utils.dielectric.result import export_dielectric_data, DielectricResults
 from ..utils.phonons.result import export_phononworkchain_data
 
 from ..utils.euphonic import (
@@ -86,7 +85,6 @@ class Result(ResultPanel):
         spectra_data = export_iramanworkchain_data(self.node)
         phonon_data = export_phononworkchain_data(self.node)
         ins_data = export_euphonic_data(self.node)
-        dielectric_data = export_dielectric_data(self.node)
 
         if phonon_data:
             phonon_children = ()
@@ -207,11 +205,6 @@ class Result(ResultPanel):
                 ),
             )
             tab_titles.append("Raman/IR spectra")
-
-        if dielectric_data:
-            dielectric_results = DielectricResults(dielectric_data)
-            children_result_widget += (dielectric_results,)
-            tab_titles.append("Dielectric properties")
 
         # euphonic
         if ins_data:

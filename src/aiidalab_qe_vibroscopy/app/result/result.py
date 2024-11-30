@@ -3,6 +3,8 @@
 from aiidalab_qe_vibroscopy.app.result.model import VibroResultsModel
 from aiidalab_qe.common.panel import ResultsPanel
 
+from aiidalab_qe_vibroscopy.app.widgets.dielectricwidget import DielectricWidget
+from aiidalab_qe_vibroscopy.app.widgets.dielectricmodel import DielectricModel
 import ipywidgets as ipw
 
 
@@ -19,6 +21,10 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
             layout=ipw.Layout(min_height="250px"),
             selected_index=None,
         )
+        self.tabs.observe(
+            self._on_tab_change,
+            "selected_index",
+        )
 
         tab_data = []
         # vibro_node = self._model.get_vibro_node()
@@ -29,8 +35,14 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
         if self._model.needs_raman_tab():
             tab_data.append(("Raman", ipw.HTML("raman_data")))
 
-        if self._model.needs_dielectric_tab():
-            tab_data.append(("Dielectric", ipw.HTML("dielectric_data")))
+        dielectric_data = self._model.needs_dielectric_tab()
+
+        if dielectric_data:
+            dielectric_model = DielectricModel()
+            dielectric_widget = DielectricWidget(
+                model=dielectric_model, dielectric_data=dielectric_data
+            )
+            tab_data.append(("Dielectric Properties", dielectric_widget))
 
         if self._model.needs_euphonic_tab():
             tab_data.append(("Euphonic", ipw.HTML("euphonic_data")))
@@ -43,3 +55,8 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
 
         self.children = [self.tabs]
         self.rendered = True
+
+    def _on_tab_change(self, change):
+        if (tab_index := change["new"]) is None:
+            return
+        self.tabs.children[tab_index].render()  # type: ignore

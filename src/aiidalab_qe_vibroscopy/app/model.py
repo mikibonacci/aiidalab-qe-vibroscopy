@@ -91,7 +91,9 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
         trait=tl.Int(),
         default_value=[2, 2, 2],
     )
-    supercell_number_estimator = tl.Unicode("?")
+    supercell_number_estimator = tl.Unicode(
+        "Click the button to estimate the supercell size."
+    )
 
     def get_model_state(self):
         return {
