@@ -7,6 +7,9 @@ from aiidalab_qe_vibroscopy.app.widgets.dielectricwidget import DielectricWidget
 from aiidalab_qe_vibroscopy.app.widgets.dielectricmodel import DielectricModel
 import ipywidgets as ipw
 
+from aiidalab_qe_vibroscopy.app.widgets.ramanwidget import RamanWidget
+from aiidalab_qe_vibroscopy.app.widgets.ramanmodel import RamanModel
+
 
 class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
     title = "Vibronic"
@@ -32,8 +35,14 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
         if self._model.needs_phonons_tab():
             tab_data.append(("Phonons", ipw.HTML("phonon_data")))
 
-        if self._model.needs_raman_tab():
-            tab_data.append(("Raman", ipw.HTML("raman_data")))
+        needs_raman_tab = self._model.needs_raman_tab()
+        if needs_raman_tab:
+            raman_model = RamanModel()
+            raman_widget = RamanWidget(
+                model=raman_model,
+                node=vibro_node,
+            )
+            tab_data.append(("Raman", raman_widget))
 
         needs_dielectri_tab = self._model.needs_dielectric_tab()
 
