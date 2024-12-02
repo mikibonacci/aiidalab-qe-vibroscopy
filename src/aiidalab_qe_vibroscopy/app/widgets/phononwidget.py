@@ -68,7 +68,7 @@ class PhononWidget(ipw.VBox):
         self.bands_pdos.update_layout(
             xaxis=dict(title="q-points"),
             yaxis=dict(title="Phonon Bands (THz)", range=[y_min - 0.1, y_max + 0.1]),
-            yaxis2=dict(range=[0, x_max + 0.1]),
+            xaxis2=dict(range=[0, x_max + 0.1]),
         )
         self.children = (self.bands_pdos, *self.children)
         self._model.update_thermo_plot(self.thermal_plot)

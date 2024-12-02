@@ -79,6 +79,7 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
 
         self.children = [self.tabs]
         self.rendered = True
+        self.tabs.selected_index = 0
 
     def _on_tab_change(self, change):
         if (tab_index := change["new"]) is None:
