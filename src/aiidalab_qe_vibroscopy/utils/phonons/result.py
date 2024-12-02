@@ -1,6 +1,6 @@
 """Bands results view widgets"""
 
-from aiidalab_qe.common.bandpdoswidget import cmap, get_bands_labeling
+from aiidalab_qe.common.bands_pdos.utils import _cmap, _get_bands_labeling
 
 import numpy as np
 import json
@@ -34,25 +34,22 @@ def export_phononworkchain_data(node, fermi_energy=None):
     }
     parameters = {}
 
-    if "vibronic" not in node.outputs:
-        return None
-
-    if "phonon_bands" in node.outputs.vibronic:
+    if "phonon_bands" in node.outputs:
         """
         copied and pasted from aiidalab_qe.common.bandsplotwidget.
         adapted for phonon outputs
         """
 
         data = json.loads(
-            node.outputs.vibronic.phonon_bands._exportcontent("json", comments=False)[0]
+            node.outputs.phonon_bands._exportcontent("json", comments=False)[0]
         )
         # The fermi energy from band calculation is not robust.
         data["fermi_energy"] = 0
-        data["pathlabels"] = get_bands_labeling(data)
+        data["pathlabels"] = _get_bands_labeling(data)
         replace_symbols_with_uppercase(data["pathlabels"])
         data["Y_label"] = "Dispersion (THz)"
 
-        bands = node.outputs.vibronic.phonon_bands._get_bandplot_data(
+        bands = node.outputs.phonon_bands._get_bandplot_data(
             cartesian=True, prettify_format=None, join_symbol=None, get_segments=True
         )
         parameters["energy_range"] = {
@@ -64,8 +61,8 @@ def export_phononworkchain_data(node, fermi_energy=None):
         data["y"] = bands["y"]
         full_data["bands"] = [data, parameters]
 
-        if "phonon_pdos" in node.outputs.vibronic:
-            phonopy_calc = node.outputs.vibronic.phonon_pdos.creator
+        if "phonon_pdos" in node.outputs:
+            phonopy_calc = node.outputs.phonon_pdos.creator
 
             kwargs = {}
             if "settings" in phonopy_calc.inputs:
@@ -75,7 +72,7 @@ def export_phononworkchain_data(node, fermi_energy=None):
                         kwargs.update({key: the_settings[key]})
 
             symbols = node.inputs.structure.get_ase().get_chemical_symbols()
-            pdos = node.outputs.vibronic.phonon_pdos
+            pdos = node.outputs.phonon_pdos
 
             index_dict, dos_dict = (
                 {},
@@ -119,8 +116,8 @@ def export_phononworkchain_data(node, fermi_energy=None):
                     "label": atom,
                     "x": pdos.get_x()[1].tolist(),
                     "y": dos_dict[atom].tolist(),
-                    "borderColor": cmap(atom),
-                    "backgroundColor": cmap(atom),
+                    "borderColor": _cmap(atom),
+                    "backgroundColor": _cmap(atom),
                     "backgroundAlpha": "40%",
                     "lineStyle": "solid",
                 }
@@ -140,27 +137,27 @@ def export_phononworkchain_data(node, fermi_energy=None):
 
             full_data["pdos"] = [json.loads(json.dumps(data_dict)), parameters, "dos"]
 
-        if "phonon_thermo" in node.outputs.vibronic:
+        if "phonon_thermo" in node.outputs:
             (
                 what,
                 T,
                 units_k,
-            ) = node.outputs.vibronic.phonon_thermo.get_x()
+            ) = node.outputs.phonon_thermo.get_x()
             (
                 F_name,
                 F_data,
                 units_F,
-            ) = node.outputs.vibronic.phonon_thermo.get_y()[0]
+            ) = node.outputs.phonon_thermo.get_y()[0]
             (
                 Entropy_name,
                 Entropy_data,
                 units_entropy,
-            ) = node.outputs.vibronic.phonon_thermo.get_y()[1]
+            ) = node.outputs.phonon_thermo.get_y()[1]
             (
                 Cv_name,
                 Cv_data,
                 units_Cv,
-            ) = node.outputs.vibronic.phonon_thermo.get_y()[2]
+            ) = node.outputs.phonon_thermo.get_y()[2]
 
             full_data["thermo"] = (
                 [T, F_data, units_F, Entropy_data, units_entropy, Cv_data, units_Cv],
