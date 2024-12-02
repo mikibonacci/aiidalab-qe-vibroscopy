@@ -6,8 +6,6 @@ from aiidalab_qe_vibroscopy.app.code import (
     VibroResourceSettingsModel,
     VibroResourcesSettingsPanel,
 )
-from aiidalab_qe_vibroscopy.app.result.result import VibroResultsPanel
-from aiidalab_qe_vibroscopy.app.result.model import VibroResultsModel
 
 from aiidalab_qe_vibroscopy.app.workchain import workchain_and_builder
 
@@ -25,10 +23,6 @@ property = {
     "code": {
         "panel": VibroResourcesSettingsPanel,
         "model": VibroResourceSettingsModel,
-    },
-    "result": {
-        "panel": VibroResultsPanel,
-        "model": VibroResultsModel,
     },
     "workchain": workchain_and_builder,
 }

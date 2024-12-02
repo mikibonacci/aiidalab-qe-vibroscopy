@@ -196,7 +196,7 @@ class SingleCrystalFullWidget(ipw.VBox):
         
         # should be rendered, not done here!
         # and moreover, should be done in the model.
-        self._model.produce_bands_weigthed_data()
+        self._model._update_spectra()
 
         self.title_intensity = ipw.HTML(
             "<h3>Neutron dynamic structure factor - Single Crystal</h3>"

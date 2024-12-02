@@ -9,7 +9,7 @@ from aiidalab_qe_vibroscopy.utils.euphonic.intensity_maps import (
 
 from aiidalab_qe.common.panel import ResultsModel
 
-class EuphonicSingleCrystalResultsModel(ResultsModel):
+class EuphonicBaseResultsModel(ResultsModel):
     """Model for the neutron scattering results panel."""
     
     # Here we mode all the model and data-controller, i.e. all the data and their
@@ -26,6 +26,7 @@ class EuphonicSingleCrystalResultsModel(ResultsModel):
     # AAA TOBE defined with respect to the type
     spectra = {}
     path = []
+    q_path = None
     
     # check the SingleCrystalSettingsWidget and base
     q_spacing = tl.Float(0.01)
@@ -34,6 +35,12 @@ class EuphonicSingleCrystalResultsModel(ResultsModel):
     temperature = tl.Float(0)
     weighting = tl.Unicode("coherent")
     custom_kpath = tl.Unicode("")
+    
+    def fetch_data(self):
+        """Fetch the data from the database."""
+        # 1. from aiida, so we have the node
+        # 2. from uploaded files...
+        pass
         
     def set_model_state(self, parameters: dict):
         self.q_spacing = parameters.get("q_spacing", 0.01)

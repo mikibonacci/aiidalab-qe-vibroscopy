@@ -15,7 +15,7 @@ from .euphonic_single_crystal_widgets import SingleCrystalFullWidget
 from .euphonic_powder_widgets import PowderFullWidget
 from .euphonic_q_planes_widgets import QSectionFullWidget
 
-from aiidalab_qe_vibroscopy.app.widgets.euphonicmodel import EuphonicSingleCrystalResultsModel
+from aiidalab_qe_vibroscopy.app.widgets.euphonicmodel import EuphonicBaseResultsModel
 
 ###### START for detached app:
 
@@ -140,7 +140,7 @@ class EuphonicSuperWidget(ipw.VBox):
     In between, we trigger the initialization of plots via a button.
     """
 
-    def __init__(self, mode="aiidalab-qe app plugin", model=None, fc=None, q_path=None):
+    def __init__(self, mode='aiidalab-qe app plugin', model=None, fc=None, q_path=None):
         """
         Initialize the Euphonic utility class.
         Parameters:
@@ -167,26 +167,26 @@ class EuphonicSuperWidget(ipw.VBox):
         fc : optional
             Force constants if provided.
         """
-
-        self._model = EuphonicSingleCrystalResultsModel()
         
         self.mode = mode
+        
+        self._model = model # this is the single crystal model.
 
         self.upload_widget = UploadPhonopyWidget()
         self.upload_widget.reset_uploads.on_click(self._on_reset_uploads_button_clicked)
-        self.fc_hdf5_content = None
+        self._model.fc_hdf5_content = None
 
         self.tab_widget = ipw.Tab()
         self.tab_widget.layout.display = "none"
         self.tab_widget.set_title(0, "Single crystal")
-        self.tab_widget.set_title(1, "Powder sample")
-        self.tab_widget.set_title(2, "Q-plane view")
+        #self.tab_widget.set_title(1, "Powder sample")
+        #self.tab_widget.set_title(2, "Q-plane view")
         self.tab_widget.children = ()
 
         if fc:
-            self.fc = fc
+            self._model.fc = fc
 
-        self.q_path = q_path
+        self._model.q_path = q_path
 
         self.plot_button = ipw.Button(
             description="Initialise INS data",
@@ -197,7 +197,7 @@ class EuphonicSuperWidget(ipw.VBox):
         )
         self.plot_button.on_click(self._on_first_plot_button_clicked)
 
-        self.loading_widget = ipw.HTML(
+        self.loading_widget = ipw.HTML( # use the loading widget!
             value=spinner_html,
         )
         self.loading_widget.layout.display = "none"
@@ -237,7 +237,7 @@ class EuphonicSuperWidget(ipw.VBox):
                 0
             ].value.keys():  # always one key because I allow only one file at the time.
                 self.fname = fname
-                self.phonopy_yaml_content = self.upload_widget.children[0].value[fname][
+                self._model.phonopy_yaml_content = self.upload_widget.children[0].value[fname][
                     "content"
                 ]
 
@@ -247,21 +247,21 @@ class EuphonicSuperWidget(ipw.VBox):
     def _on_upload_hdf5(self, change):
         if change["new"] != change["old"]:
             for fname in self.upload_widget.children[1].value.keys():
-                self.fc_hdf5_content = self.upload_widget.children[1].value[fname][
+                self._model.fc_hdf5_content = self.upload_widget.children[1].value[fname][
                     "content"
                 ]
 
-    def _generate_force_constants(
+    def _generate_force_constants( #needs to go in the model
         self,
     ):
         if self.mode == "aiidalab-qe app plugin":
-            return self.fc
+            return self.fc # we should not check mode, but node, when we put this in the model.
 
         else:
             fc = self.upload_widget._read_phonopy_files(
                 fname=self.fname,
-                phonopy_yaml_content=self.phonopy_yaml_content,
-                fc_hdf5_content=self.fc_hdf5_content,
+                phonopy_yaml_content=self._model.phonopy_yaml_content,
+                fc_hdf5_content=self._model.fc_hdf5_content,
             )
 
             return fc
@@ -269,27 +269,25 @@ class EuphonicSuperWidget(ipw.VBox):
     def _on_first_plot_button_clicked(self, change=None): # basically the render.
         # It creates the widgets
         self.plot_button.layout.display = "none"
-
         self.loading_widget.layout.display = "block"
 
-        self.fc = self._generate_force_constants() # should be in the model.
+        self._model.fc = self._generate_force_constants() # should be in the model.
 
         # I first initialise this widget, to then have the 0K ref for the other two.
-        singlecrystalmodel.fc = self.fc
-        singlecrystalwidget = SingleCrystalFullWidget(model=singlecrystalmodel)
+        # the model is passed to the widget. For the other two, I need to generate the model.
+        singlecrystalwidget = SingleCrystalFullWidget(model=self._model)
 
         self.tab_widget.children = (
             singlecrystalwidget,
-            PowderFullWidget(
-                self.fc, intensity_ref_0K=singlecrystalwidget.intensity_ref_0K
-            ),
-            QSectionFullWidget(
-                self.fc, intensity_ref_0K=singlecrystalwidget.intensity_ref_0K
-            ),
+            #PowderFullWidget(
+            #    self.fc, intensity_ref_0K=singlecrystalwidget.intensity_ref_0K
+            #),
+            #QSectionFullWidget(
+            #    self.fc, intensity_ref_0K=singlecrystalwidget.intensity_ref_0K
+            #),
         )
 
         self.loading_widget.layout.display = "none"
-
         self.tab_widget.layout.display = "block"
 
 
