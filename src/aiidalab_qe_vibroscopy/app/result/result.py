@@ -10,6 +10,9 @@ import ipywidgets as ipw
 from aiidalab_qe_vibroscopy.app.widgets.ir_ramanwidget import IRRamanWidget
 from aiidalab_qe_vibroscopy.app.widgets.ir_ramanmodel import IRRamanModel
 
+from aiidalab_qe_vibroscopy.app.widgets.phononwidget import PhononWidget
+from aiidalab_qe_vibroscopy.app.widgets.phononmodel import PhononModel
+
 
 class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
     title = "Vibronic"
@@ -32,8 +35,15 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
         tab_data = []
         vibro_node = self._model.get_vibro_node()
 
-        if self._model.needs_phonons_tab():
-            tab_data.append(("Phonons", ipw.HTML("phonon_data")))
+        needs_phonons_tab = self._model.needs_phonons_tab()
+        if needs_phonons_tab:
+            vibroscopy_node = self._model._fetch_child_process_node()
+            phonon_model = PhononModel()
+            phonon_widget = PhononWidget(
+                model=phonon_model,
+                node=vibroscopy_node,
+            )
+            tab_data.append(("Phonons", phonon_widget))
 
         needs_raman_tab = self._model.needs_raman_tab()
         if needs_raman_tab:
