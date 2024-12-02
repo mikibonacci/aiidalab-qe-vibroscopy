@@ -44,13 +44,17 @@ class StructureFactorBasePlotWidget(ipw.VBox):
 
     THz_to_meV = 4.13566553853599  # conversion factor.
 
-    def __init__(self, final_xspectra, **kwargs):
+    def __init__(self, model, **kwargs):
         """
 
         Args:
             final_xspectra (_type_):
         """
 
+        self._model = model
+        
+        final_xspectra = self._model.spectra
+        
         self.message_fig = ipw.HTML("")
         self.message_fig.layout.display = "none"
 
@@ -123,11 +127,10 @@ class StructureFactorBasePlotWidget(ipw.VBox):
             ),
         )
 
-    def _update_spectra(
+    def _update_plot( # actually, should be an _update_plot... we don't modify data...
         self,
-        final_zspectra,
     ):
-        # this will be called in the _update_spectra method of SingleCrystalPlotWidget and PowderPlotWidget
+        # this will be called in the _update_plot method of SingleCrystalPlotWidget and PowderPlotWidget
 
         # Update the layout to enable autoscaling
         self.fig.update_layout(autosize=True)
@@ -186,49 +189,71 @@ class StructureFactorSettingsBaseWidget(ipw.VBox):
     both single crystal or powder.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, model, **kwargs):
         super().__init__()
 
-        self.float_q_spacing = ipw.FloatText(
-            value=0.01,
+        self._model = model
+        
+        self.q_spacing = ipw.FloatText(
+            value=self._model.q_spacing,
             step=0.001,
             description="q step (1/A)",
             tooltip="q spacing in 1/A",
         )
-        self.float_q_spacing.observe(self._on_setting_changed, names="value")
+        ipw.link(
+            (self._model, "q_spacing"),
+            (self.q_spacing, "value"),
+        )
+        self.q_spacing.observe(self._on_setting_changed, names="value")
 
-        self.float_energy_broadening = ipw.FloatText(
-            value=0.5,
+        self.energy_broadening = ipw.FloatText(
+            value=self._model.energy_broadening,
             step=0.01,
             description="&Delta;E (meV)",
             tooltip="Energy broadening in meV",
         )
-        self.float_energy_broadening.observe(self._on_setting_changed, names="value")
+        ipw.link(
+            (self._model, "energy_broadening"),
+            (self.energy_broadening, "value"),
+        )
+        self.energy_broadening.observe(self._on_setting_changed, names="value")
 
-        self.int_energy_bins = ipw.IntText(
-            value=200,
+        self.energy_bins = ipw.IntText(
+            value=self._model.energy_bins,
             description="#E bins",
             tooltip="Number of energy bins",
         )
-        self.int_energy_bins.observe(self._on_setting_changed, names="value")
+        ipw.link(
+            (self._model, "energy_bins"),
+            (self.energy_bins, "value"),
+        )
+        self.energy_bins.observe(self._on_setting_changed, names="value")
 
-        self.float_T = ipw.FloatText(
-            value=0,
+        self.temperature = ipw.FloatText(
+            value=self._model.temperature,
             step=0.01,
             description="T (K)",
             disabled=False,
         )
-        self.float_T.observe(self._on_setting_changed, names="value")
+        ipw.link(
+            (self._model, "temperature"),
+            (self.temperature, "value"),
+        )
+        self.temperature.observe(self._on_setting_changed, names="value")
 
         self.weight_button = ipw.ToggleButtons(
             options=[
                 ("Coherent", "coherent"),
                 ("DOS", "dos"),
             ],
-            value="coherent",
+            value=self._model.weighting,
             description="weight:",
             disabled=False,
             style={"description_width": "initial"},
+        )
+        ipw.link(
+            (self._model, "weighting"),
+            (self.weight_button, "value"),
         )
         self.weight_button.observe(self._on_weight_button_change, names="value")
 
@@ -248,6 +273,7 @@ class StructureFactorSettingsBaseWidget(ipw.VBox):
             disabled=False,
             layout=ipw.Layout(width="auto"),
         )
+        self.reset_button.on_click(self._reset_settings)
 
         self.download_button = ipw.Button(
             description="Download Data and Plot",
@@ -255,16 +281,7 @@ class StructureFactorSettingsBaseWidget(ipw.VBox):
             button_style="primary",
             disabled=False,  # Large files...
             layout=ipw.Layout(width="auto"),
-        )
-
-        self.reset_button.on_click(self._reset_settings)
-
-    def _reset_settings(self, _):
-        self.float_q_spacing.value = 0.01
-        self.float_energy_broadening.value = 0.5
-        self.int_energy_bins.value = 200
-        self.float_T.value = 0
-        self.weight_button.value = "coherent"
+        )  
 
     def _on_plot_button_changed(self, change):
         if change["new"] != change["old"]:
@@ -272,82 +289,12 @@ class StructureFactorSettingsBaseWidget(ipw.VBox):
 
     def _on_weight_button_change(self, change):
         if change["new"] != change["old"]:
-            self.float_T.value = 0
-            self.float_T.disabled = True if change["new"] == "dos" else False
+            self.temperature.value = 0
+            self.temperature.disabled = True if change["new"] == "dos" else False
             self.plot_button.disabled = False
 
-    def _on_setting_changed(self, change):
+    def _on_setting_changed(self, change): # think if we want to do something more evident... 
         self.plot_button.disabled = False
-
-
-class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
-    def __init__(self, **kwargs):
-        self.custom_kpath_description = ipw.HTML(
-            """
-            <div style="padding-top: 0px; padding-bottom: 0px; line-height: 140%;">
-                <b>Custom q-points path for the structure factor</b>: <br>
-                we can provide it via a specific format: <br>
-                (1) each linear path should be divided by '|'; <br>
-                (2) each path is composed of 'qxi qyi qzi - qxf qyf qzf' where qxi and qxf are, respectively,
-                the start and end x-coordinate of the q direction, in reciprocal lattice units (rlu).<br>
-                An example path is: '0 0 0 - 1 1 1 | 1 1 1 - 0.5 0.5 0.5'. <br>
-                For now, we do not support fractions (i.e. we accept 0.5 but not 1/2).
-            </div>
-            """
-        )
-
-        self.custom_kpath_text = ipw.Text(
-            value="",
-            description="Custom path (rlu):",
-            style={"description_width": "initial"},
-        )
-        custom_style = '<style>.custom-font { font-family: "Monospaced"; font-size: 16px; }</style>'
-        display(ipw.HTML(custom_style))
-        self.custom_kpath_text.add_class("custom-font")
-
-        self.custom_kpath_text.observe(self._on_setting_changed, names="value")
-
-        # Please note: if you change the order of the widgets below, it will
-        # affect the usage of the children[0] below in the full widget.
-
-        super().__init__()
-
-        self.children = [
-            ipw.HBox(
-                [
-                    ipw.VBox(
-                        [
-                            ipw.HBox(
-                                [
-                                    self.reset_button,
-                                    self.plot_button,
-                                    self.download_button,
-                                ]
-                            ),
-                            self.specification_intensity,
-                            self.float_q_spacing,
-                            self.float_energy_broadening,
-                            self.int_energy_bins,
-                            self.float_T,
-                            self.weight_button,
-                        ],
-                        layout=ipw.Layout(
-                            width="50%",
-                        ),
-                    ),
-                    ipw.VBox(
-                        [
-                            self.custom_kpath_description,
-                            self.custom_kpath_text,
-                        ],
-                        layout=ipw.Layout(
-                            width="80%",
-                        ),
-                    ),
-                ],  # end of HBox children
-            ),
-        ]
-
+        
     def _reset_settings(self, _):
-        self.custom_kpath_text.value = ""
-        super()._reset_settings(_)
+        self._model.reset()

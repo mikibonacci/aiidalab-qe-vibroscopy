@@ -231,7 +231,9 @@ def produce_bands_weigthed_data(
     if not params:
         args = AttrDict(copy.deepcopy(parameters))
     else:
-        args = AttrDict(copy.deepcopy(params))
+        args = copy.deepcopy(parameters)
+        args.update(params)
+        args = AttrDict(args)
 
     # redundancy with args...
     calc_modes_kwargs = _calc_modes_kwargs(args)

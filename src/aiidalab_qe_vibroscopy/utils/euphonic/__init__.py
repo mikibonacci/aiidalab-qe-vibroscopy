@@ -15,6 +15,7 @@ from .euphonic_single_crystal_widgets import SingleCrystalFullWidget
 from .euphonic_powder_widgets import PowderFullWidget
 from .euphonic_q_planes_widgets import QSectionFullWidget
 
+from aiidalab_qe_vibroscopy.app.widgets.euphonicmodel import EuphonicSingleCrystalResultsModel
 
 ###### START for detached app:
 
@@ -139,7 +140,7 @@ class EuphonicSuperWidget(ipw.VBox):
     In between, we trigger the initialization of plots via a button.
     """
 
-    def __init__(self, mode="aiidalab-qe app plugin", fc=None, q_path=None):
+    def __init__(self, mode="aiidalab-qe app plugin", model=None, fc=None, q_path=None):
         """
         Initialize the Euphonic utility class.
         Parameters:
@@ -167,6 +168,8 @@ class EuphonicSuperWidget(ipw.VBox):
             Force constants if provided.
         """
 
+        self._model = EuphonicSingleCrystalResultsModel()
+        
         self.mode = mode
 
         self.upload_widget = UploadPhonopyWidget()
@@ -263,16 +266,17 @@ class EuphonicSuperWidget(ipw.VBox):
 
             return fc
 
-    def _on_first_plot_button_clicked(self, change=None):
+    def _on_first_plot_button_clicked(self, change=None): # basically the render.
         # It creates the widgets
         self.plot_button.layout.display = "none"
 
         self.loading_widget.layout.display = "block"
 
-        self.fc = self._generate_force_constants()
+        self.fc = self._generate_force_constants() # should be in the model.
 
         # I first initialise this widget, to then have the 0K ref for the other two.
-        singlecrystalwidget = SingleCrystalFullWidget(self.fc, self.q_path)
+        singlecrystalmodel.fc = self.fc
+        singlecrystalwidget = SingleCrystalFullWidget(model=singlecrystalmodel)
 
         self.tab_widget.children = (
             singlecrystalwidget,

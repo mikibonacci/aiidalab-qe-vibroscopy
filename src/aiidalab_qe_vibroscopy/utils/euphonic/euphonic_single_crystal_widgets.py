@@ -28,23 +28,22 @@ from aiidalab_qe_vibroscopy.utils.euphonic.euphonic_base_widgets import (
 
 
 class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
-    def __init__(self, spectra, intensity_ref_0K=1, **kwargs):
-        (
-            final_xspectra,
-            final_zspectra,
-            ticks_positions,
-            ticks_labels,
-        ) = generated_curated_data(spectra)
-        # Data to contour is the sum of two Gaussian functions.
-        x, y = np.meshgrid(spectra[0].x_data.magnitude, spectra[0].y_data.magnitude)
+    # I should introduce the model here.
+    def __init__(self, model, **kwargs):
+        
+        # Create and show figure; before, I was initializing this at the end.
+        super().__init__(
+            model,
+            **kwargs,
+        )
 
-        self.intensity_ref_0K = intensity_ref_0K
+        # if we divide the max by this intensity of ref, does not change anything: the highest will always be 100%
 
         self.fig = go.FigureWidget()
 
         heatmap_trace = go.Heatmap(
-            z=final_zspectra.T,
-            y=y[:, 0] * self.THz_to_meV,
+            z=self._model.final_zspectra.T,
+            y=self._model.y[:, 0] * self.THz_to_meV,
             x=None,
             colorbar=COLORBAR_DICT,
             colorscale=COLORSCALE,  # imported from euphonic_base_widgets
@@ -60,26 +59,19 @@ class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
 
         self.fig.update_layout(
             xaxis=dict(
-                tickmode="array", tickvals=ticks_positions, ticktext=ticks_labels
+                tickmode="array", 
+                tickvals=self._model.ticks_positions, 
+                ticktext=self._model.ticks_labels
             )
         )
         self.fig["layout"]["yaxis"].update(range=[min(y[:, 0]), max(y[:, 0])])
 
-        # Create and show figure
-        super().__init__(
-            final_xspectra,
-            **kwargs,
-        )
-
-    def _update_spectra(self, spectra):
-        (
-            final_xspectra,
-            final_zspectra,
-            ticks_positions,
-            ticks_labels,
-        ) = generated_curated_data(spectra)
+    def _update_plot(self, spectra): # should be an update plot, the data should be re-generated in the model.
+        # apart the first two calls, I think the control of the view should here. 
+        # we should do self._model._update_spectra and then self._update_plot here.
+        
+        self._model._update_spectra()
         # Data to contour is the sum of two Gaussian functions.
-        x, y = np.meshgrid(spectra[0].x_data.magnitude, spectra[0].y_data.magnitude)
 
         # If I do this
         #   self.data = ()
@@ -90,13 +82,13 @@ class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
         x = None  # if mode == "intensity" else x[0]
         self.fig.add_trace(
             go.Heatmap(
-                z=final_zspectra.T,
+                z=self._model.final_zspectra.T,
                 y=(
-                    y[:, 0] * self.THz_to_meV
+                    self._model.y[:, 0] * self.THz_to_meV
                     if self.E_units_button.value == "meV"
-                    else y[:, 0]
+                    else self._model.y[:, 0]
                 ),
-                x=x,
+                x=x, # self._model.x,
                 colorbar=COLORBAR_DICT,
                 colorscale=COLORSCALE,  # imported from euphonic_base_widgets
             )
@@ -106,17 +98,22 @@ class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
         # this is delays things
         self.fig.update_layout(
             xaxis=dict(
-                tickmode="array", tickvals=ticks_positions, ticktext=ticks_labels
+                tickmode="array", tickvals=self._model.ticks_positions, ticktext=self._model.ticks_labels
             )
         )
 
         self.fig.data = [self.fig.data[1]]
 
-        super()._update_spectra(final_zspectra)
+        super()._update_plot()
 
 
 class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
-    def __init__(self, **kwargs):
+    def __init__(self, model, **kwargs):
+        # Please note: if you change the order of the widgets below, it will
+        # affect the usage of the children[0] below in the full widget.
+
+        super().__init__(model=model)
+        
         self.custom_kpath_description = ipw.HTML(
             """
             <div style="padding-top: 0px; padding-bottom: 0px; line-height: 140%;">
@@ -124,7 +121,7 @@ class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
                 we can provide it via a specific format: <br>
                 (1) each linear path should be divided by '|'; <br>
                 (2) each path is composed of 'qxi qyi qzi - qxf qyf qzf' where qxi and qxf are, respectively,
-                the start and end x-coordinate of the q direction, in crystal coordinates.<br>
+                the start and end x-coordinate of the q direction, in reciprocal lattice units (rlu).<br>
                 An example path is: '0 0 0 - 1 1 1 | 1 1 1 - 0.5 0.5 0.5'. <br>
                 For now, we do not support fractions (i.e. we accept 0.5 but not 1/2).
             </div>
@@ -139,13 +136,11 @@ class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
         custom_style = '<style>.custom-font { font-family: "Monospaced"; font-size: 16px; }</style>'
         display(ipw.HTML(custom_style))
         self.custom_kpath_text.add_class("custom-font")
-
+        ipw.link(
+            (self._model, "custom_kpath"),
+            (self.custom_kpath_text, "value"),
+        )
         self.custom_kpath_text.observe(self._on_setting_changed, names="value")
-
-        # Please note: if you change the order of the widgets below, it will
-        # affect the usage of the children[0] below in the full widget.
-
-        super().__init__()
 
         self.children = [
             ipw.HBox(
@@ -159,10 +154,11 @@ class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
                                     self.download_button,
                                 ]
                             ),
-                            self.float_q_spacing,
-                            self.float_energy_broadening,
-                            self.int_energy_bins,
-                            self.float_T,
+                            self.specification_intensity,
+                            self.q_spacing,
+                            self.energy_broadening,
+                            self.energy_bins,
+                            self.temperature,
                             self.weight_button,
                         ],
                         layout=ipw.Layout(
@@ -182,12 +178,9 @@ class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
             ),
         ]
 
-    def _reset_settings(self, _):
-        self.custom_kpath_text.value = ""
-        super()._reset_settings(_)
-
 
 class SingleCrystalFullWidget(ipw.VBox):
+    # I need to put the model also HERE! Think how we can so all of this in simpler way.
     """
     The Widget to display specifically the Intensity map of Dynamical structure
     factor for single crystal.
@@ -197,30 +190,27 @@ class SingleCrystalFullWidget(ipw.VBox):
     and are from Sears (1992) Neutron News 3(3) pp26--37.
     """
 
-    def __init__(self, fc, q_path, **kwargs):
-        self.fc = fc
-        self.q_path = q_path
-
-        self.spectra, self.parameters = produce_bands_weigthed_data(
-            fc=self.fc,
-            linear_path=self.q_path,
-            plot=False,  # CHANGED
-        )
+    def __init__(self, model, **kwargs):
+        
+        self._model = model
+        
+        # should be rendered, not done here!
+        # and moreover, should be done in the model.
+        self._model.produce_bands_weigthed_data()
 
         self.title_intensity = ipw.HTML(
             "<h3>Neutron dynamic structure factor - Single Crystal</h3>"
         )
 
-        self.settings_intensity = SingleCrystalSettingsWidget()
+        # we initialize and inject the model here.
+        self.settings_intensity = SingleCrystalSettingsWidget(model=self._model)
+        self.map_widget = SingleCrystalPlotWidget(model=self._model)
+        
+        # specific for the single crystal
         self.settings_intensity.plot_button.on_click(self._on_plot_button_clicked)
         self.settings_intensity.download_button.on_click(self.download_data)
 
-        # This is used in order to have an overall intensity scale.
-        self.intensity_ref_0K = np.max(self.spectra[0].z_data.magnitude)  # CHANGED
-
-        self.map_widget = SingleCrystalPlotWidget(
-            self.spectra, intensity_ref_0K=self.intensity_ref_0K
-        )  # CHANGED
+        
 
         super().__init__(
             children=[
@@ -263,7 +253,7 @@ class SingleCrystalFullWidget(ipw.VBox):
         )
 
         self.settings_intensity.plot_button.disabled = True
-        self.map_widget._update_spectra(self.spectra)  # CHANGED
+        self.map_widget._update_plot(self.spectra)  # CHANGED
 
     def download_data(self, _=None):
         """
@@ -305,26 +295,6 @@ class SingleCrystalFullWidget(ipw.VBox):
         b64_str = base64.b64encode(image_bytes).decode()
         self._download(payload=b64_str, filename=filename + ".png")
 
-    def curate_path_and_labels(
-        self,
-    ):
-        # I do not like this implementation (MB)
-        coordinates = []
-        labels = []
-        path = self.settings_intensity.custom_kpath_text.value
-        linear_paths = path.split("|")
-        for i in linear_paths:
-            scoords = []
-            s = i.split(
-                " - "
-            )  # not i.split("-"), otherwise also the minus of the negative numbers are used for the splitting.
-            for k in s:
-                labels.append(k.strip())
-                # AAA missing support for fractions.
-                l = tuple(map(float, [kk for kk in k.strip().split(" ")]))  # noqa: E741
-                scoords.append(l)
-            coordinates.append(scoords)
-        return coordinates, labels
 
     @staticmethod
     def _download(payload, filename):
