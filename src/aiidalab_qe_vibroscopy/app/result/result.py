@@ -7,8 +7,8 @@ from aiidalab_qe_vibroscopy.app.widgets.dielectricwidget import DielectricWidget
 from aiidalab_qe_vibroscopy.app.widgets.dielectricmodel import DielectricModel
 import ipywidgets as ipw
 
-from aiidalab_qe_vibroscopy.app.widgets.ramanwidget import RamanWidget
-from aiidalab_qe_vibroscopy.app.widgets.ramanmodel import RamanModel
+from aiidalab_qe_vibroscopy.app.widgets.ir_ramanwidget import IRRamanWidget
+from aiidalab_qe_vibroscopy.app.widgets.ir_ramanmodel import IRRamanModel
 
 
 class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
@@ -37,12 +37,16 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
 
         needs_raman_tab = self._model.needs_raman_tab()
         if needs_raman_tab:
-            raman_model = RamanModel()
-            raman_widget = RamanWidget(
-                model=raman_model,
+            vibroscopy_node = self._model._fetch_child_process_node()
+            input_structure = vibroscopy_node.inputs.structure.get_ase()
+            irraman_model = IRRamanModel()
+            irraman_widget = IRRamanWidget(
+                model=irraman_model,
                 node=vibro_node,
+                input_structure=input_structure,
             )
-            tab_data.append(("Raman", raman_widget))
+
+            tab_data.append(("Raman/IR spectra", irraman_widget))
 
         needs_dielectri_tab = self._model.needs_dielectric_tab()
 

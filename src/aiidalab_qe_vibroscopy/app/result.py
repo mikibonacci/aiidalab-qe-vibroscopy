@@ -8,7 +8,6 @@ from aiidalab_qe.common.bandpdoswidget import BandPdosPlotly
 from IPython.display import display
 import numpy as np
 
-from ..utils.raman.result import export_iramanworkchain_data
 from ..utils.phonons.result import export_phononworkchain_data
 
 from ..utils.euphonic import (
@@ -18,8 +17,6 @@ from ..utils.euphonic import (
 )
 import plotly.graph_objects as go
 import ipywidgets as ipw
-
-from ..utils.raman.result import SpectrumPlotWidget, ActiveModesWidget
 
 
 class PhononBandPdosPlotly(BandPdosPlotly):
@@ -82,7 +79,6 @@ class Result(ResultPanel):
         children_result_widget = ()
         tab_titles = []  # this is needed to name the sub panels
 
-        spectra_data = export_iramanworkchain_data(self.node)
         phonon_data = export_phononworkchain_data(self.node)
         ins_data = export_euphonic_data(self.node)
 
@@ -163,48 +159,6 @@ class Result(ResultPanel):
                     ),
                 ),
             )  # the comma is required! otherwise the tuple is not detected.
-
-        if spectra_data:
-            # Here we should provide the possibility to have both IR and Raman,
-            # as the new logic can provide both at the same time.
-            # We are gonna use the same widget, providing the correct spectrum_type: "Raman" or "Ir".
-            children_spectra = ()
-            for spectrum, data in spectra_data.items():
-                if not data:
-                    continue
-
-                elif isinstance(data, str):
-                    # No Modes are detected. So we explain why
-                    no_mode_widget = ipw.HTML(data)
-                    explanation_widget = ipw.HTML(
-                        "This may be due to the fact that the current implementation of aiida-vibroscopy plugin only considers first-order effects."
-                    )
-
-                    children_spectra += (
-                        ipw.VBox([no_mode_widget, explanation_widget]),
-                    )
-
-                else:
-                    subwidget_title = ipw.HTML(f"<h3>{spectrum} spectroscopy</h3>")
-                    spectrum_widget = SpectrumPlotWidget(
-                        node=self.node, output_node=data, spectrum_type=spectrum
-                    )
-                    modes_animation = ActiveModesWidget(
-                        node=self.node, output_node=data, spectrum_type=spectrum
-                    )
-
-                    children_spectra += (
-                        ipw.VBox([subwidget_title, spectrum_widget, modes_animation]),
-                    )
-            children_result_widget += (
-                ipw.VBox(
-                    children=children_spectra,
-                    layout=ipw.Layout(
-                        width="100%",
-                    ),
-                ),
-            )
-            tab_titles.append("Raman/IR spectra")
 
         # euphonic
         if ins_data:

@@ -2,6 +2,8 @@ import ipywidgets as ipw
 from aiidalab_qe_vibroscopy.app.widgets.ramanmodel import RamanModel
 import plotly.graph_objects as go
 from aiidalab_widgets_base.utils import StatusHTML
+from IPython.display import HTML, clear_output, display
+from weas_widget import WeasWidget
 
 
 class RamanWidget(ipw.VBox):
@@ -9,100 +11,118 @@ class RamanWidget(ipw.VBox):
     Widget to display Raman properties Tab
     """
 
-    def __init__(self, model: RamanModel, node: None, **kwargs):
+    def __init__(
+        self, model: RamanModel, node: None, input_structure, spectrum_type, **kwargs
+    ):
         super().__init__(
             children=[ipw.HTML("Loading Raman data...")],
             **kwargs,
         )
         self._model = model
+        self._model.spectrum_type = spectrum_type
         self._model.vibro = node
+        self._model.input_structure = input_structure
         self.rendered = False
 
     def render(self):
         if self.rendered:
             return
 
-        self.raman_plot_type = ipw.ToggleButtons(
+        self.guiConfig = {
+            "enabled": True,
+            "components": {
+                "atomsControl": True,
+                "buttons": True,
+                "cameraControls": True,
+            },
+            "buttons": {
+                "fullscreen": True,
+                "download": True,
+                "measurement": True,
+            },
+        }
+
+        self.plot_type = ipw.ToggleButtons(
             description="Spectrum type:",
             style={"description_width": "initial"},
         )
         ipw.dlink(
-            (self._model, "raman_plot_type_options"),
-            (self.raman_plot_type, "options"),
+            (self._model, "plot_type_options"),
+            (self.plot_type, "options"),
         )
         ipw.link(
-            (self._model, "raman_plot_type"),
-            (self.raman_plot_type, "value"),
+            (self._model, "plot_type"),
+            (self.plot_type, "value"),
         )
-        self.raman_plot_type.observe(self._on_raman_plot_type_change, names="value")
-        self.raman_temperature = ipw.FloatText(
+        self.plot_type.observe(self._on_plot_type_change, names="value")
+        self.temperature = ipw.FloatText(
             description="Temperature (K):",
             style={"description_width": "initial"},
         )
         ipw.link(
-            (self._model, "raman_temperature"),
-            (self.raman_temperature, "value"),
+            (self._model, "temperature"),
+            (self.temperature, "value"),
         )
-        self.raman_frequency_laser = ipw.FloatText(
+        self.frequency_laser = ipw.FloatText(
             description="Laser frequency (nm):",
             style={"description_width": "initial"},
         )
         ipw.link(
-            (self._model, "raman_frequency_laser"),
-            (self.raman_frequency_laser, "value"),
+            (self._model, "frequency_laser"),
+            (self.frequency_laser, "value"),
         )
-        self.raman_pol_incoming = ipw.Text(
+        self.pol_incoming = ipw.Text(
             description="Incoming polarization:",
             style={"description_width": "initial"},
             layout=ipw.Layout(visibility="hidden"),
         )
         ipw.link(
-            (self._model, "raman_pol_incoming"),
-            (self.raman_pol_incoming, "value"),
+            (self._model, "pol_incoming"),
+            (self.pol_incoming, "value"),
         )
-        self.raman_pol_outgoing = ipw.Text(
+        self.pol_outgoing = ipw.Text(
             description="Outgoing polarization:",
             style={"description_width": "initial"},
             layout=ipw.Layout(visibility="hidden"),
         )
         ipw.link(
-            (self._model, "raman_pol_outgoing"),
-            (self.raman_pol_outgoing, "value"),
+            (self._model, "pol_outgoing"),
+            (self.pol_outgoing, "value"),
         )
-        self.raman_plot_button = ipw.Button(
+        self.plot_button = ipw.Button(
             description="Update Plot",
             icon="pencil",
             button_style="primary",
             layout=ipw.Layout(width="auto"),
         )
-        self.raman_plot_button.on_click(self._on_raman_plot_button_click)
-        self.raman_download_button = ipw.Button(
+        self.plot_button.on_click(self._on_plot_button_click)
+        self.download_button = ipw.Button(
             description="Download Data",
             icon="download",
             button_style="primary",
             layout=ipw.Layout(width="auto"),
         )
-        self.raman_download_button.on_click(self._model.download_data)
+        self.download_button.on_click(self._model.download_data)
         self._wrong_syntax = StatusHTML(clear_after=8)
 
-        self.raman_broadening = ipw.FloatText(
+        self.broadening = ipw.FloatText(
             description="Broadening (cm-1):",
             style={"description_width": "initial"},
         )
         ipw.link(
-            (self._model, "raman_broadening"),
-            (self.raman_broadening, "value"),
+            (self._model, "broadening"),
+            (self.broadening, "value"),
         )
 
-        self.raman_separate_polarized = ipw.Checkbox(
+        self.separate_polarizations = ipw.Checkbox(
             description="Separate polarized and depolarized intensities",
             style={"description_width": "initial"},
         )
         ipw.link(
-            (self._model, "raman_separate_polarizations"),
-            (self.raman_separate_polarized, "value"),
+            (self._model, "separate_polarizations"),
+            (self.separate_polarizations, "value"),
         )
-        self.raman_spectrum = go.FigureWidget(
+        self.spectrum = go.FigureWidget(
             layout=go.Layout(
                 title=dict(text="Powder Raman spectrum"),
                 barmode="overlay",
@@ -119,51 +139,149 @@ class RamanWidget(ipw.VBox):
             )
         )
 
+        # Active Modes
+        self.modes_table = ipw.Output()
+        self.animation = ipw.Output()
+
+        self.active_modes = ipw.Dropdown(
+            description="Select mode:",
+            style={"description_width": "initial"},
+        )
+        ipw.dlink(
+            (self._model, "active_modes_options"),
+            (self.active_modes, "options"),
+        )
+        self.amplitude = ipw.FloatText(
+            description="Amplitude :",
+            style={"description_width": "initial"},
+        )
+        ipw.link(
+            (self._model, "amplitude"),
+            (self.amplitude, "value"),
+        )
+        self._supercell = [
+            ipw.BoundedIntText(min=1, layout={"width": "40px"}),
+            ipw.BoundedIntText(min=1, layout={"width": "40px"}),
+            ipw.BoundedIntText(min=1, layout={"width": "40px"}),
+        ]
+        for i, widget in enumerate(self._supercell):
+            ipw.link(
+                (self._model, f"supercell_{i}"),
+                (widget, "value"),
+            )
+
+        self.supercell_selector = ipw.HBox(
+            [
+                ipw.HTML(
+                    description="Super cell:", style={"description_width": "initial"}
+                )
+            ]
+            + self._supercell
+        )
+        # WeasWidget Setting
+        self.weas = WeasWidget(guiConfig=self.guiConfig)
+        self.weas.from_ase(self._model.input_structure)
+        self.weas.avr.model_style = 1
+        self.weas.avr.color_type = "JMOL"
+
+        widget_list = [
+            self.active_modes,
+            self.amplitude,
+            self._supercell[0],
+            self._supercell[1],
+            self._supercell[2],
+        ]
+        for elem in widget_list:
+            elem.observe(self._select_active_mode, names="value")
+
         self.children = [
-            ipw.HTML("<h3>Raman spectroscopy</h3>"),
+            ipw.HTML(f"<h3>{self._model.spectrum_type} spectroscopy</h3>"),
             ipw.HTML(
                 """<div style="line-height: 140%; padding-top: 10px; padding-bottom: 10px">
                 Select the type of Raman spectrum to plot.
                 </div>"""
             ),
-            self.raman_plot_type,
-            self.raman_temperature,
-            self.raman_frequency_laser,
-            self.raman_broadening,
-            self.raman_separate_polarized,
-            self.raman_pol_incoming,
-            self.raman_pol_outgoing,
-            ipw.HBox([self.raman_plot_button, self.raman_download_button]),
-            self.raman_spectrum,
-            ipw.HTML("<h3>IR spectroscopy</h3>"),
+            self.plot_type,
+            self.temperature,
+            self.frequency_laser,
+            self.broadening,
+            self.separate_polarizations,
+            self.pol_incoming,
+            self.pol_outgoing,
+            ipw.HBox([self.plot_button, self.download_button]),
+            self.spectrum,
+            ipw.HBox(
+                [
+                    ipw.VBox(
+                        [
+                            ipw.HTML(
+                                value=f"<b>{self._model.spectrum_type} Active Modes</b>"
+                            ),
+                            self.modes_table,
+                        ]
+                    ),
+                    ipw.VBox(
+                        [
+                            self.active_modes,
+                            self.amplitude,
+                            self.supercell_selector,
+                            self.animation,
+                        ],
+                    ),
+                ]
+            ),
         ]
 
         self.rendered = True
+
         self._initial_view()
 
     def _initial_view(self):
         self._model.fetch_data()
         self._model.update_data()
-        self.raman_spectrum.add_scatter(
+        if self._model.spectrum_type == "IR":
+            self.temperature.layout.display = "none"
+            self.frequency_laser.layout.display = "none"
+            self.pol_outgoing.layout.display == "none"
+            self.separate_polarizations.layout.display = "none"
+
+        self.spectrum.add_scatter(
             x=self._model.frequencies, y=self._model.intensities, name=""
         )
+        self.spectrum.layout.title.text = f"Powder {self._model.spectrum_type} Spectrum"
+        self.modes_table.layout = {
+            "overflow": "auto",
+            "height": "200px",
+            "width": "150px",
+        }
+        self.weas = self._model.set_vibrational_mode_animation(self.weas)
+        with self.animation:
+            clear_output()
+            display(self.weas)
 
-    def _on_raman_plot_type_change(self, change):
+        with self.modes_table:
+            clear_output()
+            display(HTML(self._model.modes_table()))
+
+    def _on_plot_type_change(self, change):
         if change["new"] == "single_crystal":
-            self.raman_pol_incoming.layout.visibility = "visible"
-            self.raman_pol_outgoing.layout.visibility = "visible"
-            self.raman_separate_polarized.layout.visibility = "hidden"
+            self.pol_incoming.layout.visibility = "visible"
+            if self._model.spectrum_type == "Raman":
+                self.pol_outgoing.layout.visibility = "visible"
+            else:
+                self.separate_polarizations.layout.display = "none"
+            self.separate_polarizations.layout.visibility = "hidden"
         else:
-            self.raman_pol_incoming.layout.visibility = "hidden"
-            self.raman_pol_outgoing.layout.visibility = "hidden"
-            self.raman_separate_polarized.layout.visibility = "visible"
+            self.pol_incoming.layout.visibility = "hidden"
+            self.pol_outgoing.layout.visibility = "hidden"
+            self.separate_polarizations.layout.visibility = "visible"
 
-    def _on_raman_plot_button_click(self, _):
+    def _on_plot_button_click(self, _):
         _, incoming_syntax_ok = self._model._check_inputs_correct(
-            self.raman_pol_incoming.value
+            self.pol_incoming.value
         )
         _, outgoing_syntax_ok = self._model._check_inputs_correct(
-            self.raman_pol_outgoing.value
+            self.pol_outgoing.value
         )
         if not (incoming_syntax_ok and outgoing_syntax_ok):
             self._wrong_syntax.message = """
@@ -173,4 +291,10 @@ class RamanWidget(ipw.VBox):
             """
             return
         self._model.update_data()
-        self._model.update_plot(self.raman_spectrum)
+        self._model.update_plot(self.spectrum)
+
+    def _select_active_mode(self, _):
+        self.weas = self._model.set_vibrational_mode_animation(self.weas)
+        with self.animation:
+            clear_output()
+            display(self.weas)

@@ -2,10 +2,6 @@ from aiidalab_qe.common.panel import ResultsModel
 import traitlets as tl
 
 
-from aiidalab_qe_vibroscopy.utils.phonons.result import export_phononworkchain_data
-from aiidalab_qe_vibroscopy.utils.euphonic import export_euphonic_data
-
-
 class VibroResultsModel(ResultsModel):
     identifier = "vibronic"
 
@@ -30,8 +26,16 @@ class VibroResultsModel(ResultsModel):
 
     # Here we use _fetch_child_process_node() since the function needs the input_structure in inputs
     def needs_phonons_tab(self):
-        return export_phononworkchain_data(self._fetch_child_process_node())
+        node = self.get_vibro_node()
+        if not any(
+            key in node for key in ["phonon_bands", "phonon_thermo", "phonon_pdos"]
+        ):
+            return False
+        return True
 
     # Here we use _fetch_child_process_node() since the function needs the input_structure in inputs
     def needs_euphonic_tab(self):
-        return export_euphonic_data(self._fetch_child_process_node())
+        node = self.get_vibro_node()
+        if not any(key in node for key in ["phonon_bands"]):
+            return False
+        return True

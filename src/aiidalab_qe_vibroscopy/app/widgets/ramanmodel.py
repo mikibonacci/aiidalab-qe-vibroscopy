@@ -2,6 +2,7 @@ from __future__ import annotations
 from aiidalab_qe.common.mvc import Model
 import traitlets as tl
 from aiida.common.extendeddicts import AttributeDict
+from ase.atoms import Atoms
 from IPython.display import display
 import numpy as np
 from aiida_vibroscopy.utils.broadenings import multilorentz
@@ -12,21 +13,24 @@ import json
 
 class RamanModel(Model):
     vibro = tl.Instance(AttributeDict, allow_none=True)
+    input_structure = tl.Instance(Atoms, allow_none=True)
+    spectrum_type = tl.Unicode()
 
-    raman_plot_type_options = tl.List(
+    plot_type_options = tl.List(
         trait=tl.List(tl.Unicode()),
         default_value=[
             ("Powder", "powder"),
             ("Single Crystal", "single_crystal"),
         ],
     )
-    raman_plot_type = tl.Unicode("powder")
-    raman_temperature = tl.Float(300)
-    raman_frequency_laser = tl.Float(532)
-    raman_pol_incoming = tl.Unicode("0 0 1")
-    raman_pol_outgoing = tl.Unicode("0 0 1")
-    raman_broadening = tl.Float(10.0)
-    raman_separate_polarizations = tl.Bool(False)
+
+    plot_type = tl.Unicode("powder")
+    temperature = tl.Float(300)
+    frequency_laser = tl.Float(532)
+    pol_incoming = tl.Unicode("0 0 1")
+    pol_outgoing = tl.Unicode("0 0 1")
+    broadening = tl.Float(10.0)
+    separate_polarizations = tl.Bool(False)
 
     frequencies = []
     intensities = []
@@ -34,72 +38,124 @@ class RamanModel(Model):
     frequencies_depolarized = []
     intensities_depolarized = []
 
+    # Active modes
+    active_modes_options = tl.List(
+        trait=tl.Tuple((tl.Unicode(), tl.Int())),
+    )
+    active_mode = tl.Int(0)
+    amplitude = tl.Float(3.0)
+
+    supercell_0 = tl.Int(1)
+    supercell_1 = tl.Int(1)
+    supercell_2 = tl.Int(1)
+
     def fetch_data(self):
         """Fetch the Raman data from the VibroWorkChain"""
         self.raman_data = self.get_vibrational_data(self.vibro)
+        self.raw_frequencies, self.eigenvectors, self.labels = (
+            self.raman_data.run_active_modes(
+                selection_rule=self.spectrum_type.lower(),
+            )
+        )
+        self.rounded_frequencies = [
+            round(frequency, 3) for frequency in self.raw_frequencies
+        ]
+        self.active_modes_options = self._get_active_modes_options()
+
+    def _get_active_modes_options(self):
+        active_modes_options = [
+            (f"{index + 1}: {value}", index)
+            for index, value in enumerate(self.rounded_frequencies)
+        ]
+
+        return active_modes_options
 
     def update_data(self):
         """
-        Update the Raman plot data based on the selected plot type and configuration.
+        Update the plot data based on the selected spectrum type, plot type, and configuration.
         """
-        if self.raman_plot_type == "powder":
+        if self.plot_type == "powder":
             self._update_powder_data()
         else:
             self._update_single_crystal_data()
 
     def _update_powder_data(self):
         """
-        Update data for the powder Raman plot.
+        Update data for the powder plot, handling both Raman and IR spectra.
         """
-        (
-            polarized_intensities,
-            depolarized_intensities,
-            frequencies,
-            _,
-        ) = self.raman_data.run_powder_raman_intensities(
-            frequencies=self.raman_frequency_laser,
-            temperature=self.raman_temperature,
-        )
-
-        if self.raman_separate_polarizations:
-            self.frequencies, self.intensities = self.generate_plot_data(
-                frequencies,
+        if self.spectrum_type == "Raman":
+            (
                 polarized_intensities,
-                self.raman_broadening,
+                depolarized_intensities,
+                frequencies,
+                _,
+            ) = self.raman_data.run_powder_raman_intensities(
+                frequencies=self.frequency_laser,
+                temperature=self.temperature,
             )
-            self.frequencies_depolarized, self.intensities_depolarized = (
-                self.generate_plot_data(
+
+            if self.separate_polarizations:
+                self.frequencies, self.intensities = self.generate_plot_data(
                     frequencies,
-                    depolarized_intensities,
-                    self.raman_broadening,
+                    polarized_intensities,
+                    self.broadening,
                 )
-            )
-        else:
-            combined_intensities = polarized_intensities + depolarized_intensities
+                self.frequencies_depolarized, self.intensities_depolarized = (
+                    self.generate_plot_data(
+                        frequencies,
+                        depolarized_intensities,
+                        self.broadening,
+                    )
+                )
+            else:
+                combined_intensities = polarized_intensities + depolarized_intensities
+                self.frequencies, self.intensities = self.generate_plot_data(
+                    frequencies,
+                    combined_intensities,
+                    self.broadening,
+                )
+                self.frequencies_depolarized, self.intensities_depolarized = [], []
+
+        elif self.spectrum_type == "IR":
+            (
+                intensities,
+                frequencies,
+                _,
+            ) = self.raman_data.run_powder_ir_intensities()
             self.frequencies, self.intensities = self.generate_plot_data(
                 frequencies,
-                combined_intensities,
-                self.raman_broadening,
+                intensities,
+                self.broadening,
             )
             self.frequencies_depolarized, self.intensities_depolarized = [], []
 
     def _update_single_crystal_data(self):
         """
-        Update data for the single crystal Raman plot.
+        Update data for the single crystal plot, handling both Raman and IR spectra.
         """
-        dir_incoming, _ = self._check_inputs_correct(self.raman_pol_incoming)
-        dir_outgoing, _ = self._check_inputs_correct(self.raman_pol_outgoing)
+        dir_incoming, _ = self._check_inputs_correct(self.pol_incoming)
 
-        (
-            intensities,
-            frequencies,
-            labels,
-        ) = self.raman_data.run_single_crystal_raman_intensities(
-            pol_incoming=dir_incoming,
-            pol_outgoing=dir_outgoing,
-            frequencies=self.raman_frequency_laser,
-            temperature=self.raman_temperature,
-        )
+        if self.spectrum_type == "Raman":
+            dir_outgoing, _ = self._check_inputs_correct(self.pol_outgoing)
+            (
+                intensities,
+                frequencies,
+                _,
+            ) = self.raman_data.run_single_crystal_raman_intensities(
+                pol_incoming=dir_incoming,
+                pol_outgoing=dir_outgoing,
+                frequencies=self.frequency_laser,
+                temperature=self.temperature,
+            )
+        elif self.spectrum_type == "IR":
+            (
+                intensities,
+                frequencies,
+                _,
+            ) = self.raman_data.run_single_crystal_ir_intensities(
+                pol_incoming=dir_incoming
+            )
+
         self.frequencies, self.intensities = self.generate_plot_data(
             frequencies, intensities
         )
@@ -114,7 +170,7 @@ class RamanModel(Model):
         """
         update_function = (
             self._update_powder_plot
-            if self.raman_plot_type == "powder"
+            if self.plot_type == "powder"
             else self._update_single_crystal_plot
         )
         update_function(plot)
@@ -126,7 +182,7 @@ class RamanModel(Model):
         Parameters:
             plot: The plotly.graph_objs.Figure widget to update.
         """
-        if self.raman_separate_polarizations:
+        if self.separate_polarizations:
             self._update_polarized_and_depolarized(plot)
         else:
             self._clear_depolarized_and_update(plot)
@@ -149,7 +205,7 @@ class RamanModel(Model):
                     name="Depolarized",
                 )
             )
-            plot.layout.title.text = "Powder Raman Spectrum"
+            plot.layout.title.text = f"Powder {self.spectrum_type} Spectrum"
         elif len(plot.data) == 2:
             self._update_trace(
                 plot.data[0], self.frequencies, self.intensities, "Polarized"
@@ -160,7 +216,7 @@ class RamanModel(Model):
                 self.intensities_depolarized,
                 "Depolarized",
             )
-            plot.layout.title.text = "Powder Raman Spectrum"
+            plot.layout.title.text = f"Powder {self.spectrum_type} Spectrum"
 
     def _clear_depolarized_and_update(self, plot):
         """
@@ -173,10 +229,10 @@ class RamanModel(Model):
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
             plot.data[1].x = []
             plot.data[1].y = []
-            plot.layout.title.text = "Powder Raman Spectrum"
+            plot.layout.title.text = f"Powder{self.spectrum_type} Spectrum"
         elif len(plot.data) == 1:
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
-            plot.layout.title.text = "Powder Raman Spectrum"
+            plot.layout.title.text = f"Powder{self.spectrum_type} Spectrum"
 
     def _update_single_crystal_plot(self, plot):
         """
@@ -189,10 +245,10 @@ class RamanModel(Model):
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
             plot.data[1].x = []
             plot.data[1].y = []
-            plot.layout.title.text = "Single Crystal Raman Spectrum"
+            plot.layout.title.text = f"Single Crystal {self.spectrum_type} Spectrum"
         elif len(plot.data) == 1:
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
-            plot.layout.title.text = "Single Crystal Raman Spectrum"
+            plot.layout.title.text = f"Single Crystal {self.spectrum_type} Spectrum"
 
     def _update_trace(self, trace, x_data, y_data, name):
         """
@@ -273,9 +329,45 @@ class RamanModel(Model):
 
         return x_range, y_range
 
+    def modes_table(self):
+        """Display table with the active modes."""
+        # Create an HTML table with the active modes
+        table_data = [list(x) for x in zip(self.rounded_frequencies, self.labels)]
+        table_html = "<table>"
+        table_html += "<tr><th>Frequencies (cm-1) </th><th> Label</th></tr>"
+        for row in table_data:
+            table_html += "<tr>"
+            for cell in row:
+                table_html += "<td style='text-align:center;'>{}</td>".format(cell)
+            table_html += "</tr>"
+        table_html += "</table>"
+
+        return table_html
+
+    def set_vibrational_mode_animation(self, weas):
+        eigenvector = self.eigenvectors[self.active_mode]
+        phonon_setting = {
+            "eigenvectors": np.array(
+                [[[real_part, 0] for real_part in row] for row in eigenvector]
+            ),
+            "kpoint": [0, 0, 0],  # optional
+            "amplitude": self.amplitude,
+            "factor": self.amplitude * 0.6,
+            "nframes": 20,
+            "repeat": [
+                self.supercell_0,
+                self.supercell_1,
+                self.supercell_2,
+            ],
+            "color": "black",
+            "radius": 0.1,
+        }
+        weas.avr.phonon_setting = phonon_setting
+        return weas
+
     def download_data(self, _=None):
         filename = "spectra.json"
-        if self.raman_separate_polarizations:
+        if self.separate_polarizations:
             my_dict = {
                 "Frequencies cm-1": self.frequencies.tolist(),
                 "Polarized intensities": self.intensities.tolist(),
