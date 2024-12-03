@@ -1,11 +1,6 @@
 import numpy as np
 import traitlets as tl
 import copy
-import json
-import base64
-import plotly.io as pio
-from monty.json import jsanitize
-from IPython.display import display
 
 from aiidalab_qe_vibroscopy.utils.euphonic.data_manipulation.intensity_maps import (
     AttrDict,
@@ -15,6 +10,7 @@ from aiidalab_qe_vibroscopy.utils.euphonic.data_manipulation.intensity_maps impo
     par_dict,
     par_dict_powder,
     export_euphonic_data,
+    generate_force_constant_instance,
 )
 
 from aiidalab_qe_vibroscopy.utils.euphonic.tab_widgets.euphonic_q_planes_widgets import (
@@ -247,58 +243,10 @@ class EuphonicBaseResultsModel(Model):
     def _clone(self):
         return copy.deepcopy(self)
 
-    def download_data(self, _=None):
-        """
-        Download both the ForceConstants and the spectra json files.
-        """
-        force_constants_dict = self.fc.to_dict()
-
-        filename = "single_crystal.json"
-        my_dict = {}
-        for branch in range(len(self.spectra)):
-            my_dict[str(branch)] = self.spectra[branch].to_dict()
-        my_dict.update(
-            {
-                "weighting": self.weighting,
-                "q_spacing": self.q_spacing,
-                "energy_broadening": self.energy_broadening,
-                "ebins": self.energy_bins,
-                "temperature": self.temperature,
-            }
+    def produce_phonopy_files(self):
+        # This is used to produce the phonopy files from
+        # PhonopyCalculation data. The files are phonopy.yaml and force_constants.hdf5
+        phonopy_yaml, fc_hdf5 = generate_force_constant_instance(
+            self.node.phonon_bands.creator, mode="download"
         )
-        for k in ["weighting", "q_spacing", "temperature"]:
-            filename += "_" + k + "_" + str(my_dict[k])
-
-        # FC download:
-        json_str = json.dumps(jsanitize(force_constants_dict))
-        b64_str = base64.b64encode(json_str.encode()).decode()
-        self._download(payload=b64_str, filename="force_constants.json")
-
-        # Powder data download:
-        json_str = json.dumps(jsanitize(my_dict))
-        b64_str = base64.b64encode(json_str.encode()).decode()
-        self._download(payload=b64_str, filename=filename + ".json")
-
-        # Plot download:
-        ## Convert the FigureWidget to an image in base64 format
-        image_bytes = pio.to_image(
-            self.map_widget.children[1], format="png", width=800, height=600
-        )
-        b64_str = base64.b64encode(image_bytes).decode()
-        self._download(payload=b64_str, filename=filename + ".png")
-
-    @staticmethod
-    def _download(payload, filename):
-        from IPython.display import Javascript
-
-        javas = Javascript(
-            """
-            var link = document.createElement('a');
-            link.href = 'data:text/json;charset=utf-8;base64,{payload}'
-            link.download = "{filename}"
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            """.format(payload=payload, filename=filename)
-        )
-        display(javas)
+        return phonopy_yaml, fc_hdf5

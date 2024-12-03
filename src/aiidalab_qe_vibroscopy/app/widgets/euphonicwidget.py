@@ -190,11 +190,15 @@ class EuphonicSuperWidget(ipw.VBox):
             self.upload_widget.children[0].observe(self._on_upload_yaml, "_counter")
             self.upload_widget.children[1].observe(self._on_upload_hdf5, "_counter")
 
+        self.download_widget = DownloadYamlHdf5Widget(model=self._model)
+        self.download_widget.layout.display = "none"
+
         self.children = [
             self.upload_widget,
             self.plot_button,
             self.loading_widget,
             self.tab_widget,
+            self.download_widget,
         ]
 
     def _on_reset_uploads_button_clicked(self, change):
@@ -259,10 +263,13 @@ class EuphonicSuperWidget(ipw.VBox):
 
         self.loading_widget.layout.display = "none"
         self.tab_widget.layout.display = "block"
+        self.download_widget.layout.display = "block"
 
 
 class DownloadYamlHdf5Widget(ipw.HBox):
-    def __init__(self, phonopy_node, **kwargs):
+    def __init__(self, model):
+        self._model = model
+
         self.download_button = ipw.Button(
             description="Download phonopy data",
             icon="pencil",
@@ -270,8 +277,7 @@ class DownloadYamlHdf5Widget(ipw.HBox):
             disabled=False,
             layout=ipw.Layout(width="auto"),
         )
-        self.download_button.on_click(self.download_data)
-        self.node = phonopy_node
+        self.download_button.on_click(self._download_data)
 
         super().__init__(
             children=[
@@ -279,13 +285,11 @@ class DownloadYamlHdf5Widget(ipw.HBox):
             ],
         )
 
-    def download_data(self, _=None):
+    def _download_data(self, _=None):
         """
         Download both the phonopy.yaml and fc.hdf5 files.
         """
-        phonopy_yaml, fc_hdf5 = generate_force_constant_instance(
-            self.node, mode="download"
-        )
+        phonopy_yaml, fc_hdf5 = self._model.produce_phonopy_files()
         self._download(payload=phonopy_yaml, filename="phonopy" + ".yaml")
         self._download(payload=fc_hdf5, filename="fc" + ".hdf5")
 
