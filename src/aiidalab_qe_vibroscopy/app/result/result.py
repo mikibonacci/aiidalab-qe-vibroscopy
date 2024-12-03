@@ -65,9 +65,8 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
 
             tab_data.append(("Raman/IR spectra", irraman_widget))
 
-        needs_dielectri_tab = self._model.needs_dielectric_tab()
-
-        if needs_dielectri_tab:
+        needs_dielectric_tab = self._model.needs_dielectric_tab()
+        if needs_dielectric_tab:
             dielectric_model = DielectricModel()
             dielectric_widget = DielectricWidget(
                 model=dielectric_model,
@@ -75,7 +74,8 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
             )
             tab_data.append(("Dielectric Properties", dielectric_widget))
 
-        if self._model.needs_euphonic_tab():
+        needs_euphonic_tab = self._model.needs_euphonic_tab()
+        if needs_euphonic_tab:
             euphonic_model = EuphonicModel()
             euphonic_widget = EuphonicWidget(
                 model=euphonic_model,
