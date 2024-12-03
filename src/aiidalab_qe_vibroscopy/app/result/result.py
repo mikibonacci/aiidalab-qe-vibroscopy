@@ -13,6 +13,13 @@ from aiidalab_qe_vibroscopy.app.widgets.ir_ramanmodel import IRRamanModel
 from aiidalab_qe_vibroscopy.app.widgets.phononwidget import PhononWidget
 from aiidalab_qe_vibroscopy.app.widgets.phononmodel import PhononModel
 
+from aiidalab_qe_vibroscopy.app.widgets.euphonicwidget import (
+    EuphonicSuperWidget as EuphonicWidget,
+)
+from aiidalab_qe_vibroscopy.app.widgets.euphonicmodel import (
+    EuphonicBaseResultsModel as EuphonicModel,
+)
+
 
 class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
     title = "Vibronic"
@@ -69,8 +76,8 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
             tab_data.append(("Dielectric Properties", dielectric_widget))
 
         if self._model.needs_euphonic_tab():
-            euphonic_model = DielectricModel()
-            euphonic_widget = DielectricWidget(
+            euphonic_model = EuphonicModel()
+            euphonic_widget = EuphonicWidget(
                 model=euphonic_model,
                 node=vibro_node,
             )
