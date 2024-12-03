@@ -1,10 +1,9 @@
-from IPython.display import display
-
 import numpy as np
 import ipywidgets as ipw
+import plotly.graph_objects as go
 
 # from ..euphonic.bands_pdos import *
-from .intensity_maps import *  # noqa: F403
+from aiidalab_qe_vibroscopy.utils.euphonic.data_manipulation.intensity_maps import *  # noqa: F403
 
 # sys and os used to prevent euphonic to print in the stdout.
 
@@ -43,42 +42,27 @@ class StructureFactorBasePlotWidget(ipw.VBox):
     """
 
     THz_to_meV = 4.13566553853599  # conversion factor.
+    THz_to_cm1 = 33.3564095198155  # conversion factor.
 
-    def __init__(self, model, **kwargs):
-        """
-
-        Args:
-            final_xspectra (_type_):
-        """
-
+    def __init__(self, model):
+        super().__init__()
         self._model = model
-        
-        final_xspectra = self._model.spectra
-        
-        self.message_fig = ipw.HTML("")
-        self.message_fig.layout.display = "none"
+        self.rendered = False
 
-        if self.fig.layout.images:
-            for image in self.fig.layout.images:
-                image["scl"] = 2  # Set the scale for each image
+    def render(self):
+        """Render the widget.
+        This is the generic render method which can be overwritten by the subwidgets.
+        However, it is important to call this method at the start of the subwidgets.render() in order to have the go.FigureWidget.
+        """
 
-        self.fig["layout"]["xaxis"].update(
-            range=[min(final_xspectra), max(final_xspectra)]
-        )
+        if self.rendered:
+            return
 
-        self.fig["layout"]["yaxis"].update(title="meV")
+        if not hasattr(self._model, "fc"):
+            self._model.fetch_data()
+        self._model._update_spectra()
 
-        self.fig.update_layout(
-            height=500,
-            width=700,
-            margin=dict(l=15, r=15, t=15, b=15),
-        )
-        # Update x-axis and y-axis to enable autoscaling
-        self.fig.update_xaxes(autorange=True)
-        self.fig.update_yaxes(autorange=True)
-
-        # Update the layout to enable autoscaling
-        self.fig.update_layout(autosize=True)
+        self.fig = go.FigureWidget()
 
         self.slider_intensity = ipw.FloatRangeSlider(
             value=[1, 100],  # Default selected interval
@@ -112,51 +96,30 @@ class StructureFactorBasePlotWidget(ipw.VBox):
             ),
         )
         self.E_units_button.observe(self._update_energy_units, "value")
+        # MAYBE WE LINK ALSO THIS TO THE MODEL? so we can download the data with the preferred units.
 
         # Create and show figure
-        super().__init__(
-            children=[
-                self.message_fig,
-                self.fig,
-                ipw.HBox([ipw.HTML("Intensity window (%):"), self.slider_intensity]),
-                self.specification_intensity,
-                self.E_units_button,
-            ],
-            layout=ipw.Layout(
-                width="100%",
-            ),
-        )
+        self.children = [
+            self.fig,
+            ipw.HBox([ipw.HTML("Intensity window (%):"), self.slider_intensity]),
+            self.specification_intensity,
+            self.E_units_button,
+        ]
 
-    def _update_plot( # actually, should be an _update_plot... we don't modify data...
-        self,
-    ):
-        # this will be called in the _update_plot method of SingleCrystalPlotWidget and PowderPlotWidget
+    def _update_plot(self):
+        """This is the generic update_plot method which can be overwritten by the subwidgets.
+        However, it is important to call this method at the end of the subwidgets._update_plot() in order to update the intensity window.
+        """
 
-        # Update the layout to enable autoscaling
         self.fig.update_layout(autosize=True)
-
-        # We should do a check, if we have few points (<200?) provide like a warning..
-        # Also decise less than what, 30%, 50%...?
-
-        """
-        visible_points = len(
-            np.where(self.fig.data[0].z > 0.5)[0]
-        )
-        if visible_points < 1000:
-            message = f"Only {visible_points}/{len(final_zspectra.T)} points have intensity higher than 50%"
-            self.message_fig.value = message
-            self.message_fig.layout.display = "block"
-        else:
-            self.message_fig.layout.display = "none"
-        """
 
         # I have also to update the energy window. or better, to set the intensity to respect the current intensity window selected:
         self.fig.data[0].zmax = (
             self.slider_intensity.value[1] * np.max(self.fig.data[0].z) / 100
-        )  # above this, it is all yellow, i.e. max intensity.
+        )  # above this, it is all yellow, i.e. this is the max detachable intensity.
         self.fig.data[0].zmin = (
             self.slider_intensity.value[0] * np.max(self.fig.data[0].z) / 100
-        )  # above this, it is all yellow, i.e. max intensity.
+        )  # below this, it is all dark blue, i.e. this is the min detachable intensity.
 
     def _update_intensity_filter(self, change):
         # the value of the intensity slider is in fractions of the max.
@@ -191,9 +154,15 @@ class StructureFactorSettingsBaseWidget(ipw.VBox):
 
     def __init__(self, model, **kwargs):
         super().__init__()
-
         self._model = model
-        
+        self.rendered = False
+
+    def render(self):
+        """Render the widget."""
+
+        if self.rendered:
+            return
+
         self.q_spacing = ipw.FloatText(
             value=self._model.q_spacing,
             step=0.001,
@@ -281,7 +250,7 @@ class StructureFactorSettingsBaseWidget(ipw.VBox):
             button_style="primary",
             disabled=False,  # Large files...
             layout=ipw.Layout(width="auto"),
-        )  
+        )
 
     def _on_plot_button_changed(self, change):
         if change["new"] != change["old"]:
@@ -289,12 +258,14 @@ class StructureFactorSettingsBaseWidget(ipw.VBox):
 
     def _on_weight_button_change(self, change):
         if change["new"] != change["old"]:
-            self.temperature.value = 0
+            self._model.temperature = 0
             self.temperature.disabled = True if change["new"] == "dos" else False
             self.plot_button.disabled = False
 
-    def _on_setting_changed(self, change): # think if we want to do something more evident... 
+    def _on_setting_changed(
+        self, change
+    ):  # think if we want to do something more evident...
         self.plot_button.disabled = False
-        
+
     def _reset_settings(self, _):
         self._model.reset()

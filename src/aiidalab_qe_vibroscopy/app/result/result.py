@@ -69,7 +69,12 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
             tab_data.append(("Dielectric Properties", dielectric_widget))
 
         if self._model.needs_euphonic_tab():
-            tab_data.append(("Euphonic", ipw.HTML("euphonic_data")))
+            euphonic_model = DielectricModel()
+            euphonic_widget = DielectricWidget(
+                model=euphonic_model,
+                node=vibro_node,
+            )
+            tab_data.append(("Neutron scattering", euphonic_widget))
 
         # Assign children and titles dynamically
         self.tabs.children = [content for _, content in tab_data]

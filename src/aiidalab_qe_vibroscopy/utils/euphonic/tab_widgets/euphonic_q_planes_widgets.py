@@ -11,7 +11,7 @@ from euphonic.cli.utils import (
     _get_energy_bins,
 )
 
-from aiidalab_qe_vibroscopy.utils.euphonic.euphonic_base_widgets import (
+from aiidalab_qe_vibroscopy.utils.euphonic.base_widgets.euphonic_base_widgets import (
     StructureFactorSettingsBaseWidget,
     COLORSCALE,
     COLORBAR_DICT,
@@ -21,10 +21,9 @@ from aiidalab_qe_vibroscopy.utils.euphonic.euphonic_base_widgets import (
 from monty.json import jsanitize
 import plotly.graph_objects as go
 
-from aiidalab_qe_vibroscopy.utils.euphonic.intensity_maps import (
+from aiidalab_qe_vibroscopy.utils.euphonic.data_manipulation.intensity_maps import (
     blockPrint,
     enablePrint,
-    AttrDict,
 )
 
 
@@ -102,7 +101,7 @@ def produce_Q_section_spectrum(
     dw=None,
     labels=None,
 ):
-    from aiidalab_qe_vibroscopy.utils.euphonic.intensity_maps import (
+    from aiidalab_qe_vibroscopy.utils.euphonic.data_manipulation.intensity_maps import (
         blockPrint,
         enablePrint,
     )
@@ -134,25 +133,22 @@ def produce_Q_section_spectrum(
 
 
 class QSectionPlotWidget(StructureFactorBasePlotWidget):
-    def __init__(self, h_array, k_array, av_spec, labels, intensity_ref_0K=1, **kwargs):
-        self.intensity_ref_0K = intensity_ref_0K
+    def render(
+        self,
+    ):
+        if self.rendered:
+            return
 
-        self.fig = go.FigureWidget()
+        super().render()
 
         self.fig.add_trace(
             go.Heatmap(
-                z=av_spec,
-                x=h_array,
-                y=k_array,
+                z=self._model.av_spec,
+                x=self._model.h_array,
+                y=self._model.k_array,
                 colorbar=COLORBAR_DICT,
                 colorscale=COLORSCALE,  # imported from euphonic_base_widgets
             )
-        )
-
-        # Create and show figure
-        super().__init__(
-            h_array,
-            **kwargs,
         )
 
         self.fig.update_layout(
@@ -165,32 +161,20 @@ class QSectionPlotWidget(StructureFactorBasePlotWidget):
         self.E_units_button.layout.display = "none"
         # self.fig.update_layout(title=labels["q"])
         self.fig["layout"]["xaxis"].update(
-            range=[np.min(h_array), np.max(h_array)],
+            range=[np.min(self._model.h_array), np.max(self._model.h_array)],
             title=r"$\alpha \text{ in } \vec{Q_0} + \alpha \vec{h}$",
         )
         self.fig["layout"]["yaxis"].update(
-            range=[np.min(k_array), np.max(k_array)],
+            range=[np.min(self._model.k_array), np.max(self._model.k_array)],
             title=r"$\beta \text{ in } \vec{Q_0} + \beta \vec{k}$",
         )
 
-    def _update_spectra(
-        self,
-        h_array,
-        k_array,
-        av_spec,
-        labels,
-    ):
-        # If I do this
-        #   self.data = ()
-        # I have a delay in the plotting, I have blank plot while it
-        # is adding the new trace (see below); So, I will instead do the
-        # re-assignement of the self.data = [self.data[1]] afterwards.
-
+    def _update_plot(self):
         self.fig.add_trace(
             go.Heatmap(
-                z=av_spec,
-                x=h_array,
-                y=k_array,
+                z=self._model.av_spec,
+                x=self._model.h_array,
+                y=self._model.k_array,
                 colorbar=COLORBAR_DICT,
                 colorscale=COLORSCALE,  # imported from euphonic_base_widgets
             )
@@ -203,28 +187,33 @@ class QSectionPlotWidget(StructureFactorBasePlotWidget):
         )
         # self.fig.update_layout(title=labels["q"])
         self.fig["layout"]["xaxis"].update(
-            range=[np.min(h_array), np.max(h_array)],
+            range=[np.min(self._model.h_array), np.max(self._model.h_array)],
             title=r"$\alpha \text{ in } \vec{Q_0} + \alpha \vec{h}$",
         )
         self.fig["layout"]["yaxis"].update(
-            range=[np.min(k_array), np.max(k_array)],
+            range=[np.min(self._model.k_array), np.max(self._model.k_array)],
             title=r"$\beta \text{ in } \vec{Q_0} + \beta \vec{k}$",
         )
 
         self.fig.data = [self.fig.data[1]]
 
-        # super()._update_spectra(av_spec, intensity_ref_0K=intensity_ref_0K)
-
 
 class QSectionSettingsWidget(StructureFactorSettingsBaseWidget):
-    def __init__(self, **kwargs):
-        super().__init__()
+    def render(self):
+        if self.rendered:
+            return
 
-        self.float_ecenter = ipw.FloatText(
+        super().render()
+
+        self.ecenter = ipw.FloatText(
             value=0,
             description="E (meV)",
         )
-        self.float_ecenter.observe(self._on_setting_changed, names="value")
+        ipw.link(
+            (self._model, "center_e"),
+            (self.ecenter, "value"),
+        )
+        self.ecenter.observe(self._on_setting_changed, names="value")
 
         self.plane_description_widget = ipw.HTML(
             """
@@ -271,6 +260,7 @@ class QSectionSettingsWidget(StructureFactorSettingsBaseWidget):
         for vec in [self.Q0_vec, self.h_vec, self.k_vec]:
             for child in vec.children:
                 child.observe(self._on_setting_changed, names="value")
+                child.observe(self._on_vector_changed, names="value")
 
         self.Q0_widget = ipw.HBox(
             [ipw.HTML("Q<sub>0</sub>: ", layout={"width": "20px"}), self.Q0_vec]
@@ -282,13 +272,16 @@ class QSectionSettingsWidget(StructureFactorSettingsBaseWidget):
             [ipw.HTML("k:  ", layout={"width": "20px"}), self.k_vec]
         )
 
-        self.float_energy_broadening = ipw.FloatText(
+        self.energy_broadening = ipw.FloatText(
             value=0.5,
             description="&Delta;E (meV)",
             tooltip="Energy window in eV",
         )
-
-        self.float_energy_broadening.observe(self._on_setting_changed, names="value")
+        ipw.link(
+            (self._model, "energy_broadening"),
+            (self.energy_broadening, "value"),
+        )
+        self.energy_broadening.observe(self._on_setting_changed, names="value")
 
         self.plot_button.disabled = False
         self.plot_button.description = "Plot"
@@ -310,10 +303,10 @@ class QSectionSettingsWidget(StructureFactorSettingsBaseWidget):
                                 ]
                             ),
                             # self.specification_intensity,
-                            self.float_ecenter,
-                            self.float_energy_broadening,
+                            self.ecenter,
+                            self.energy_broadening,
                             # self.int_energy_bins, # does not change anything here.
-                            self.float_T,
+                            self.temperature,
                             self.weight_button,
                         ],
                         layout=ipw.Layout(
@@ -335,13 +328,13 @@ class QSectionSettingsWidget(StructureFactorSettingsBaseWidget):
             ),
         ]
 
-    def _reset_settings(self, _):
-        ####
-        super()._reset_settings(_)
-        self.h_vec.children[-2].value = 100  # n_h
-        self.k_vec.children[-2].value = 100  # n_h
-        self.h_vec.children[-1].value = 1  # alpha, or h_extension
-        self.k_vec.children[-1].value = 1  # beta, or k_extension
+    def _on_vector_changed(self, change=None):
+        """
+        Update the model.
+        """
+        self._model.Q0_vec = [i.value for i in self.Q0_vec.children[:-2]]
+        self._model.h_vec = [i.value for i in self.h_vec.children]
+        self._model.k_vec = [i.value for i in self.k_vec.children]
 
 
 class QSectionFullWidget(ipw.VBox):
@@ -354,93 +347,47 @@ class QSectionFullWidget(ipw.VBox):
     and are from Sears (1992) Neutron News 3(3) pp26--37.
     """
 
-    def __init__(self, fc, intensity_ref_0K=1, **kwargs):
-        self.fc = fc
+    def __init__(self, model):
+        self._model = model
+        self.rendered = False
+        super().__init__()
+
+    def render(self):
+        if self.rendered:
+            return
 
         self.title_intensity = ipw.HTML(
             "<h3>Neutron dynamic structure factor in a Q-section visualization</h3>"
         )
 
-        self.settings_intensity = QSectionSettingsWidget()
+        self.settings_intensity = QSectionSettingsWidget(model=self._model)
+
+        # rendering the widget.
+        self.settings_intensity.render()
+
+        # specific for the q section
         self.settings_intensity.plot_button.on_click(self._on_plot_button_clicked)
         self.settings_intensity.download_button.on_click(self.download_data)
 
-        # This is used in order to have an overall intensity scale. Inherithed from the SingleCrystal
-        self.intensity_ref_0K = intensity_ref_0K  # CHANGED
-
-        super().__init__(
-            children=[
-                self.title_intensity,
-                # self.map_widget,
-                self.settings_intensity,
-            ],
-        )
+        self.children = [
+            self.title_intensity,
+            # self.map_widget,
+            self.settings_intensity,
+        ]
 
     def _on_plot_button_clicked(self, change=None):
-        self.parameters = {
-            "h": np.array(
-                [i.value for i in self.settings_intensity.h_vec.children[:-2]]
-            ),
-            "k": np.array(
-                [i.value for i in self.settings_intensity.k_vec.children[:-2]]
-            ),
-            "n_h": self.settings_intensity.h_vec.children[-2].value,
-            "n_k": self.settings_intensity.k_vec.children[-2].value,
-            "h_extension": self.settings_intensity.h_vec.children[-1].value,
-            "k_extension": self.settings_intensity.k_vec.children[-1].value,
-            "Q0": np.array(
-                [i.value for i in self.settings_intensity.Q0_vec.children[:-2]]
-            ),
-            "ecenter": self.settings_intensity.float_ecenter.value,
-            "deltaE": self.settings_intensity.float_energy_broadening.value,
-            "bins": self.settings_intensity.int_energy_bins.value,
-            "spectrum_type": self.settings_intensity.weight_button.value,
-            "temperature": self.settings_intensity.float_T.value,
-        }
+        self._model._update_qsection_spectra()
 
-        parameters_ = AttrDict(self.parameters)  # CHANGED
-
-        modes, q_array, h_array, k_array, labels, dw = produce_Q_section_modes(
-            self.fc,
-            h=parameters_.h,
-            k=parameters_.k,
-            Q0=parameters_.Q0,
-            n_h=parameters_.n_h,
-            n_k=parameters_.n_k,
-            h_extension=parameters_.h_extension,
-            k_extension=parameters_.k_extension,
-            temperature=parameters_.temperature,
-        )
-
-        av_spec, q_array, h_array, k_array, labels = produce_Q_section_spectrum(
-            modes,
-            q_array,
-            h_array,
-            k_array,
-            ecenter=parameters_.ecenter,
-            deltaE=parameters_.deltaE,
-            bins=parameters_.bins,
-            spectrum_type=parameters_.spectrum_type,
-            dw=dw,
-            labels=labels,
-        )
-
-        self.settings_intensity.plot_button.disabled = True
-        self.settings_intensity.plot_button.description = "Replot"
-
-        if hasattr(self, "map_widget"):
-            self.map_widget._update_spectra(
-                h_array, k_array, av_spec, labels
-            )  # CHANGED
-        else:
-            self.map_widget = QSectionPlotWidget(
-                h_array, k_array, av_spec, labels
-            )  # CHANGED
+        if not hasattr(self, "map_widget"):
+            self.map_widget = QSectionPlotWidget(self._model)  # CHANGED
+            self.map_widget.render()
             self.children = [
                 self.title_intensity,
                 self.map_widget,
                 self.settings_intensity,
             ]
+
+        self.map_widget._update_plot()
 
     def download_data(self, _=None):
         """
@@ -465,9 +412,9 @@ class QSectionFullWidget(ipw.VBox):
                     [i.value for i in self.settings_intensity.Q0_vec.children[:-2]]
                 ),
                 "weight": self.settings_intensity.weight_button.value,
-                "ecenter": self.settings_intensity.float_ecenter.value,
-                "deltaE": self.settings_intensity.float_energy_broadening.value,
-                "temperature": self.settings_intensity.float_T.value,
+                "ecenter": self.settings_intensity.ecenter.value,
+                "deltaE": self.settings_intensity.energy_broadening.value,
+                "temperature": self.settings_intensity.temperature.value,
             }
         )
         for k in ["h", "k", "Q0", "weight", "ecenter", "deltaE", "temperature"]:

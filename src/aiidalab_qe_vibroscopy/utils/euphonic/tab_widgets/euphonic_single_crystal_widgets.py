@@ -1,25 +1,18 @@
 import base64
 from IPython.display import display
 
-import numpy as np
-import copy
 import ipywidgets as ipw
 import plotly.graph_objects as go
 import plotly.io as pio
 
 # from ..euphonic.bands_pdos import *
-from ..euphonic.intensity_maps import (
-    AttrDict,
-    produce_bands_weigthed_data,
-    generated_curated_data,
-)
 
 import json
 from monty.json import jsanitize
 
 # sys and os used to prevent euphonic to print in the stdout.
 
-from aiidalab_qe_vibroscopy.utils.euphonic.euphonic_base_widgets import (
+from aiidalab_qe_vibroscopy.utils.euphonic.base_widgets.euphonic_base_widgets import (
     StructureFactorSettingsBaseWidget,
     COLORSCALE,
     COLORBAR_DICT,
@@ -28,18 +21,11 @@ from aiidalab_qe_vibroscopy.utils.euphonic.euphonic_base_widgets import (
 
 
 class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
-    # I should introduce the model here.
-    def __init__(self, model, **kwargs):
-        
-        # Create and show figure; before, I was initializing this at the end.
-        super().__init__(
-            model,
-            **kwargs,
-        )
+    def render(self):
+        if self.rendered:
+            return
 
-        # if we divide the max by this intensity of ref, does not change anything: the highest will always be 100%
-
-        self.fig = go.FigureWidget()
+        super().render()
 
         heatmap_trace = go.Heatmap(
             z=self._model.final_zspectra.T,
@@ -57,27 +43,39 @@ class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
         # Add heatmap trace to figure
         self.fig.add_trace(heatmap_trace)
 
+        # Layout settings
         self.fig.update_layout(
             xaxis=dict(
-                tickmode="array", 
-                tickvals=self._model.ticks_positions, 
-                ticktext=self._model.ticks_labels
+                tickmode="array",
+                tickvals=self._model.ticks_positions,
+                ticktext=self._model.ticks_labels,
             )
         )
-        self.fig["layout"]["yaxis"].update(range=[min(y[:, 0]), max(y[:, 0])])
 
-    def _update_plot(self, spectra): # should be an update plot, the data should be re-generated in the model.
-        # apart the first two calls, I think the control of the view should here. 
-        # we should do self._model._update_spectra and then self._update_plot here.
-        
+        self.fig["layout"]["yaxis"].update(
+            title="meV",
+            range=[min(self._model.y[:, 0]), max(self._model.y[:, 0])],
+        )
+
+        if self.fig.layout.images:
+            for image in self.fig.layout.images:
+                image["scl"] = 2  # Set the scale for each image
+
+        self.fig.update_layout(
+            height=500,
+            width=700,
+            margin=dict(l=15, r=15, t=15, b=15),
+        )
+        # Update x-axis and y-axis to enable autoscaling
+        self.fig.update_xaxes(autorange=True)
+        self.fig.update_yaxes(autorange=True)
+
+        # Update the layout to enable autoscaling
+        self.fig.update_layout(autosize=True)
+
+    def _update_plot(self):
+        # update the spectra, i.e. the data contained in the _model.
         self._model._update_spectra()
-        # Data to contour is the sum of two Gaussian functions.
-
-        # If I do this
-        #   self.data = ()
-        # I have a delay in the plotting, I have blank plot while it
-        # is adding the new trace (see below); So, I will instead do the
-        # re-assignement of the self.data = [self.data[1]] afterwards.
 
         x = None  # if mode == "intensity" else x[0]
         self.fig.add_trace(
@@ -88,7 +86,7 @@ class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
                     if self.E_units_button.value == "meV"
                     else self._model.y[:, 0]
                 ),
-                x=x, # self._model.x,
+                x=x,  # self._model.x,
                 colorbar=COLORBAR_DICT,
                 colorscale=COLORSCALE,  # imported from euphonic_base_widgets
             )
@@ -98,7 +96,9 @@ class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
         # this is delays things
         self.fig.update_layout(
             xaxis=dict(
-                tickmode="array", tickvals=self._model.ticks_positions, ticktext=self._model.ticks_labels
+                tickmode="array",
+                tickvals=self._model.ticks_positions,
+                ticktext=self._model.ticks_labels,
             )
         )
 
@@ -108,12 +108,12 @@ class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
 
 
 class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
-    def __init__(self, model, **kwargs):
-        # Please note: if you change the order of the widgets below, it will
-        # affect the usage of the children[0] below in the full widget.
+    def render(self):
+        if self.rendered:
+            return
 
-        super().__init__(model=model)
-        
+        super().render()
+
         self.custom_kpath_description = ipw.HTML(
             """
             <div style="padding-top: 0px; padding-bottom: 0px; line-height: 140%;">
@@ -154,7 +154,6 @@ class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
                                     self.download_button,
                                 ]
                             ),
-                            self.specification_intensity,
                             self.q_spacing,
                             self.energy_broadening,
                             self.energy_bins,
@@ -183,20 +182,26 @@ class SingleCrystalFullWidget(ipw.VBox):
     # I need to put the model also HERE! Think how we can so all of this in simpler way.
     """
     The Widget to display specifically the Intensity map of Dynamical structure
-    factor for single crystal.
+    factor for single crystal. It is composed of the following widgets:
+    - title_intensity: HTML widget with the title of the widget.
+    - settings_intensity: SingleCrystalSettingsWidget widget with the settings for the plot.
+    - map_widget: SingleCrystalPlotWidget widget with the plot of the intensity map.
+    - download_button: Button widget to download the intensity map.
+
 
     The scattering lengths used in the `produce_bands_weigthed_data` function
     are tabulated (Euphonic/euphonic/data/sears-1992.json)
     and are from Sears (1992) Neutron News 3(3) pp26--37.
     """
 
-    def __init__(self, model, **kwargs):
-        
+    def __init__(self, model):
         self._model = model
-        
-        # should be rendered, not done here!
-        # and moreover, should be done in the model.
-        self._model._update_spectra()
+        self.rendered = False
+        super().__init__()
+
+    def render(self):
+        if self.rendered:
+            return
 
         self.title_intensity = ipw.HTML(
             "<h3>Neutron dynamic structure factor - Single Crystal</h3>"
@@ -205,75 +210,38 @@ class SingleCrystalFullWidget(ipw.VBox):
         # we initialize and inject the model here.
         self.settings_intensity = SingleCrystalSettingsWidget(model=self._model)
         self.map_widget = SingleCrystalPlotWidget(model=self._model)
-        
+
+        # rendering the widgets
+        self.settings_intensity.render()
+        self.map_widget.render()
+
         # specific for the single crystal
         self.settings_intensity.plot_button.on_click(self._on_plot_button_clicked)
         self.settings_intensity.download_button.on_click(self.download_data)
 
-        
-
-        super().__init__(
-            children=[
-                self.title_intensity,
-                self.map_widget,
-                self.settings_intensity,
-            ],
-        )
+        self.children = [
+            self.title_intensity,
+            self.map_widget,
+            self.settings_intensity,
+        ]
 
     def _on_plot_button_clicked(self, change=None):
-        self.parameters.update(
-            {
-                "weighting": self.settings_intensity.weight_button.value,
-                "q_spacing": self.settings_intensity.float_q_spacing.value,
-                "energy_broadening": self.settings_intensity.float_energy_broadening.value,
-                "ebins": self.settings_intensity.int_energy_bins.value,
-                "temperature": self.settings_intensity.float_T.value,
-            }
-        )
-        parameters_ = AttrDict(self.parameters)  # CHANGED
-
-        # custom linear path
-        if len(self.settings_intensity.custom_kpath_text.value) > 1:
-            coordinates, labels = self.curate_path_and_labels()
-            linear_path = {
-                "coordinates": coordinates,
-                "labels": labels,  # ["$\Gamma$","X","X","(1,1,1)"],
-                "delta_q": parameters_["q_spacing"],
-            }
-        else:
-            linear_path = copy.deepcopy(self.q_path)
-            if linear_path:
-                linear_path["delta_q"] = parameters_["q_spacing"]
-
-        self.spectra, self.parameters = produce_bands_weigthed_data(
-            params=parameters_,
-            fc=self.fc,
-            plot=False,
-            linear_path=linear_path,  # CHANGED
-        )
-
         self.settings_intensity.plot_button.disabled = True
-        self.map_widget._update_plot(self.spectra)  # CHANGED
+        self.map_widget._update_plot()
 
     def download_data(self, _=None):
         """
         Download both the ForceConstants and the spectra json files.
+        TODO: improve the format, should be easy to open somewhere else.
         """
         force_constants_dict = self.fc.to_dict()
 
         filename = "single_crystal.json"
         my_dict = {}
-        for branch in range(len(self.spectra)):
-            my_dict[str(branch)] = self.spectra[branch].to_dict()
-        my_dict.update(
-            {
-                "weighting": self.settings_intensity.weight_button.value,
-                "q_spacing": self.settings_intensity.float_q_spacing.value,
-                "energy_broadening": self.settings_intensity.float_energy_broadening.value,
-                "ebins": self.settings_intensity.int_energy_bins.value,
-                "temperature": self.settings_intensity.float_T.value,
-            }
-        )
+        my_dict["x"] = self._model.final_xspectra.tolist()
+        my_dict["y"] = self._model.y.tolist()
+        my_dict["z"] = self._model.final_zspectra.tolist()
+        my_dict.update(self._model.get_model_state())
         for k in ["weighting", "q_spacing", "temperature"]:
             filename += "_" + k + "_" + str(my_dict[k])
 
@@ -294,7 +262,6 @@ class SingleCrystalFullWidget(ipw.VBox):
         )
         b64_str = base64.b64encode(image_bytes).decode()
         self._download(payload=b64_str, filename=filename + ".png")
-
 
     @staticmethod
     def _download(payload, filename):
