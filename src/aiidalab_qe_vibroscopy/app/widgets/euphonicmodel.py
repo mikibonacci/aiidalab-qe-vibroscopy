@@ -105,6 +105,10 @@ class EuphonicBaseResultsModel(Model):
             setattr(self, k, v)
 
     def _get_default(self, trait):
+        if trait in ["h_vec", "k_vec"]:
+            return [1, 1, 1, 100, 1]
+        elif trait == "Q0_vec":
+            return [0.0, 0.0, 0.0]
         return self.traits()[trait].default_value
 
     def get_model_state(self):

@@ -118,7 +118,9 @@ class EuphonicSuperWidget(ipw.VBox):
     In between, we trigger the initialization of plots via a button.
     """
 
-    def __init__(self, mode="aiidalab-qe app plugin", model=None, fc=None, q_path=None):
+    def __init__(
+        self, mode="aiidalab-qe app plugin", model=None, node=None, fc=None, q_path=None
+    ):
         """
         Initialize the Euphonic utility class.
         Parameters:
@@ -148,6 +150,7 @@ class EuphonicSuperWidget(ipw.VBox):
 
         self.mode = mode
         self._model = model  # this is the single crystal model.
+        self._model.node = node
         self._model.fc_hdf5_content = None
 
         self.rendered = False
