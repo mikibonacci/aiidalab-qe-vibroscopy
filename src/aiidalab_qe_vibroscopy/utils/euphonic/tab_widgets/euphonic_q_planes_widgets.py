@@ -375,6 +375,8 @@ class QSectionFullWidget(ipw.VBox):
             self.settings_intensity,
         ]
 
+        self.rendered = True
+
     def _on_plot_button_clicked(self, change=None):
         self._model._update_qsection_spectra()
 

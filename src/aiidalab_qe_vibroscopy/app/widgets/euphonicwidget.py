@@ -201,6 +201,8 @@ class EuphonicSuperWidget(ipw.VBox):
             self.download_widget,
         ]
 
+        self.rendered = True
+
     def _on_reset_uploads_button_clicked(self, change):
         self.upload_widget.upload_phonopy_yaml.value.clear()
         self.upload_widget.upload_phonopy_yaml._counter = 0

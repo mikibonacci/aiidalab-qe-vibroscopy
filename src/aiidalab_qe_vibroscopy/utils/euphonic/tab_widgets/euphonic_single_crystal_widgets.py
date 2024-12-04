@@ -225,6 +225,8 @@ class SingleCrystalFullWidget(ipw.VBox):
             self.settings_intensity,
         ]
 
+        self.rendered = True
+
     def _on_plot_button_clicked(self, change=None):
         self.settings_intensity.plot_button.disabled = True
         self.map_widget._update_plot()
