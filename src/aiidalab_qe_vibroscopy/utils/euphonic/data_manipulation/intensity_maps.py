@@ -231,7 +231,9 @@ def produce_bands_weigthed_data(
     if not params:
         args = AttrDict(copy.deepcopy(parameters))
     else:
-        args = AttrDict(copy.deepcopy(params))
+        args = copy.deepcopy(parameters)
+        args.update(params)
+        args = AttrDict(args)
 
     # redundancy with args...
     calc_modes_kwargs = _calc_modes_kwargs(args)
@@ -431,6 +433,7 @@ def produce_powder_data(
     params: Optional[List[str]] = parameters_powder,
     fc: ForceConstants = None,
     plot=False,
+    linear_path=None,
 ) -> None:
     blockPrint()
 
@@ -758,14 +761,14 @@ def generate_force_constant_instance(
     return fc
 
 
-def export_euphonic_data(node, fermi_energy=None):
-    if "phonon_bands" not in node.outputs:
+def export_euphonic_data(output_vibronic, fermi_energy=None):
+    if "phonon_bands" not in output_vibronic:
         return None
 
-    output_set = node.outputs.phonon_bands
+    output_set = output_vibronic.phonon_bands
 
-    if any(not element for element in node.inputs.structure.pbc):
-        vibro_bands = node.inputs.phonopy_bands_dict.get_dict()
+    if any(not element for element in output_set.creator.caller.inputs.structure.pbc):
+        vibro_bands = output_set.creator.caller.inputs.phonopy_bands_dict.get_dict()
         # Group the band and band_labels
         band = vibro_bands["band"]
         band_labels = vibro_bands["band_labels"]

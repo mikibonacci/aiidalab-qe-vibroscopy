@@ -1,25 +1,18 @@
 import base64
 from IPython.display import display
 
-import numpy as np
-import copy
 import ipywidgets as ipw
 import plotly.graph_objects as go
 import plotly.io as pio
 
 # from ..euphonic.bands_pdos import *
-from ..euphonic.intensity_maps import (
-    AttrDict,
-    produce_bands_weigthed_data,
-    generated_curated_data,
-)
 
 import json
 from monty.json import jsanitize
 
 # sys and os used to prevent euphonic to print in the stdout.
 
-from aiidalab_qe_vibroscopy.utils.euphonic.euphonic_base_widgets import (
+from aiidalab_qe_vibroscopy.utils.euphonic.base_widgets.euphonic_base_widgets import (
     StructureFactorSettingsBaseWidget,
     COLORSCALE,
     COLORBAR_DICT,
@@ -28,23 +21,15 @@ from aiidalab_qe_vibroscopy.utils.euphonic.euphonic_base_widgets import (
 
 
 class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
-    def __init__(self, spectra, intensity_ref_0K=1, **kwargs):
-        (
-            final_xspectra,
-            final_zspectra,
-            ticks_positions,
-            ticks_labels,
-        ) = generated_curated_data(spectra)
-        # Data to contour is the sum of two Gaussian functions.
-        x, y = np.meshgrid(spectra[0].x_data.magnitude, spectra[0].y_data.magnitude)
+    def render(self):
+        if self.rendered:
+            return
 
-        self.intensity_ref_0K = intensity_ref_0K
-
-        self.fig = go.FigureWidget()
+        super().render()
 
         heatmap_trace = go.Heatmap(
-            z=final_zspectra.T,
-            y=y[:, 0] * self.THz_to_meV,
+            z=self._model.final_zspectra.T,
+            y=self._model.y[:, 0] * self.THz_to_meV,
             x=None,
             colorbar=COLORBAR_DICT,
             colorscale=COLORSCALE,  # imported from euphonic_base_widgets
@@ -58,45 +43,50 @@ class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
         # Add heatmap trace to figure
         self.fig.add_trace(heatmap_trace)
 
+        # Layout settings
         self.fig.update_layout(
             xaxis=dict(
-                tickmode="array", tickvals=ticks_positions, ticktext=ticks_labels
+                tickmode="array",
+                tickvals=self._model.ticks_positions,
+                ticktext=self._model.ticks_labels,
             )
         )
-        self.fig["layout"]["yaxis"].update(range=[min(y[:, 0]), max(y[:, 0])])
 
-        # Create and show figure
-        super().__init__(
-            final_xspectra,
-            **kwargs,
+        self.fig["layout"]["yaxis"].update(
+            title="meV",
+            range=[min(self._model.y[:, 0]), max(self._model.y[:, 0])],
         )
 
-    def _update_spectra(self, spectra):
-        (
-            final_xspectra,
-            final_zspectra,
-            ticks_positions,
-            ticks_labels,
-        ) = generated_curated_data(spectra)
-        # Data to contour is the sum of two Gaussian functions.
-        x, y = np.meshgrid(spectra[0].x_data.magnitude, spectra[0].y_data.magnitude)
+        if self.fig.layout.images:
+            for image in self.fig.layout.images:
+                image["scl"] = 2  # Set the scale for each image
 
-        # If I do this
-        #   self.data = ()
-        # I have a delay in the plotting, I have blank plot while it
-        # is adding the new trace (see below); So, I will instead do the
-        # re-assignement of the self.data = [self.data[1]] afterwards.
+        self.fig.update_layout(
+            height=500,
+            width=700,
+            margin=dict(l=15, r=15, t=15, b=15),
+        )
+        # Update x-axis and y-axis to enable autoscaling
+        self.fig.update_xaxes(autorange=True)
+        self.fig.update_yaxes(autorange=True)
+
+        # Update the layout to enable autoscaling
+        self.fig.update_layout(autosize=True)
+
+    def _update_plot(self):
+        # update the spectra, i.e. the data contained in the _model.
+        self._model._update_spectra()
 
         x = None  # if mode == "intensity" else x[0]
         self.fig.add_trace(
             go.Heatmap(
-                z=final_zspectra.T,
+                z=self._model.final_zspectra.T,
                 y=(
-                    y[:, 0] * self.THz_to_meV
+                    self._model.y[:, 0] * self.THz_to_meV
                     if self.E_units_button.value == "meV"
-                    else y[:, 0]
+                    else self._model.y[:, 0]
                 ),
-                x=x,
+                x=x,  # self._model.x,
                 colorbar=COLORBAR_DICT,
                 colorscale=COLORSCALE,  # imported from euphonic_base_widgets
             )
@@ -106,17 +96,24 @@ class SingleCrystalPlotWidget(StructureFactorBasePlotWidget):
         # this is delays things
         self.fig.update_layout(
             xaxis=dict(
-                tickmode="array", tickvals=ticks_positions, ticktext=ticks_labels
+                tickmode="array",
+                tickvals=self._model.ticks_positions,
+                ticktext=self._model.ticks_labels,
             )
         )
 
         self.fig.data = [self.fig.data[1]]
 
-        super()._update_spectra(final_zspectra)
+        super()._update_plot()
 
 
 class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
-    def __init__(self, **kwargs):
+    def render(self):
+        if self.rendered:
+            return
+
+        super().render()
+
         self.custom_kpath_description = ipw.HTML(
             """
             <div style="padding-top: 0px; padding-bottom: 0px; line-height: 140%;">
@@ -124,7 +121,7 @@ class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
                 we can provide it via a specific format: <br>
                 (1) each linear path should be divided by '|'; <br>
                 (2) each path is composed of 'qxi qyi qzi - qxf qyf qzf' where qxi and qxf are, respectively,
-                the start and end x-coordinate of the q direction, in crystal coordinates.<br>
+                the start and end x-coordinate of the q direction, in reciprocal lattice units (rlu).<br>
                 An example path is: '0 0 0 - 1 1 1 | 1 1 1 - 0.5 0.5 0.5'. <br>
                 For now, we do not support fractions (i.e. we accept 0.5 but not 1/2).
             </div>
@@ -139,13 +136,11 @@ class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
         custom_style = '<style>.custom-font { font-family: "Monospaced"; font-size: 16px; }</style>'
         display(ipw.HTML(custom_style))
         self.custom_kpath_text.add_class("custom-font")
-
+        ipw.link(
+            (self._model, "custom_kpath"),
+            (self.custom_kpath_text, "value"),
+        )
         self.custom_kpath_text.observe(self._on_setting_changed, names="value")
-
-        # Please note: if you change the order of the widgets below, it will
-        # affect the usage of the children[0] below in the full widget.
-
-        super().__init__()
 
         self.children = [
             ipw.HBox(
@@ -159,10 +154,10 @@ class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
                                     self.download_button,
                                 ]
                             ),
-                            self.float_q_spacing,
-                            self.float_energy_broadening,
-                            self.int_energy_bins,
-                            self.float_T,
+                            self.q_spacing,
+                            self.energy_broadening,
+                            self.energy_bins,
+                            self.temperature,
                             self.weight_button,
                         ],
                         layout=ipw.Layout(
@@ -182,108 +177,71 @@ class SingleCrystalSettingsWidget(StructureFactorSettingsBaseWidget):
             ),
         ]
 
-    def _reset_settings(self, _):
-        self.custom_kpath_text.value = ""
-        super()._reset_settings(_)
-
 
 class SingleCrystalFullWidget(ipw.VBox):
+    # I need to put the model also HERE! Think how we can so all of this in simpler way.
     """
     The Widget to display specifically the Intensity map of Dynamical structure
-    factor for single crystal.
+    factor for single crystal. It is composed of the following widgets:
+    - title_intensity: HTML widget with the title of the widget.
+    - settings_intensity: SingleCrystalSettingsWidget widget with the settings for the plot.
+    - map_widget: SingleCrystalPlotWidget widget with the plot of the intensity map.
+    - download_button: Button widget to download the intensity map.
+
 
     The scattering lengths used in the `produce_bands_weigthed_data` function
     are tabulated (Euphonic/euphonic/data/sears-1992.json)
     and are from Sears (1992) Neutron News 3(3) pp26--37.
     """
 
-    def __init__(self, fc, q_path, **kwargs):
-        self.fc = fc
-        self.q_path = q_path
+    def __init__(self, model):
+        self._model = model
+        self.rendered = False
+        super().__init__()
 
-        self.spectra, self.parameters = produce_bands_weigthed_data(
-            fc=self.fc,
-            linear_path=self.q_path,
-            plot=False,  # CHANGED
-        )
+    def render(self):
+        if self.rendered:
+            return
 
         self.title_intensity = ipw.HTML(
             "<h3>Neutron dynamic structure factor - Single Crystal</h3>"
         )
 
-        self.settings_intensity = SingleCrystalSettingsWidget()
+        # we initialize and inject the model here.
+        self.settings_intensity = SingleCrystalSettingsWidget(model=self._model)
+        self.map_widget = SingleCrystalPlotWidget(model=self._model)
+
+        # rendering the widgets
+        self.settings_intensity.render()
+        self.map_widget.render()
+
+        # specific for the single crystal
         self.settings_intensity.plot_button.on_click(self._on_plot_button_clicked)
         self.settings_intensity.download_button.on_click(self.download_data)
 
-        # This is used in order to have an overall intensity scale.
-        self.intensity_ref_0K = np.max(self.spectra[0].z_data.magnitude)  # CHANGED
-
-        self.map_widget = SingleCrystalPlotWidget(
-            self.spectra, intensity_ref_0K=self.intensity_ref_0K
-        )  # CHANGED
-
-        super().__init__(
-            children=[
-                self.title_intensity,
-                self.map_widget,
-                self.settings_intensity,
-            ],
-        )
+        self.children = [
+            self.title_intensity,
+            self.map_widget,
+            self.settings_intensity,
+        ]
 
     def _on_plot_button_clicked(self, change=None):
-        self.parameters.update(
-            {
-                "weighting": self.settings_intensity.weight_button.value,
-                "q_spacing": self.settings_intensity.float_q_spacing.value,
-                "energy_broadening": self.settings_intensity.float_energy_broadening.value,
-                "ebins": self.settings_intensity.int_energy_bins.value,
-                "temperature": self.settings_intensity.float_T.value,
-            }
-        )
-        parameters_ = AttrDict(self.parameters)  # CHANGED
-
-        # custom linear path
-        if len(self.settings_intensity.custom_kpath_text.value) > 1:
-            coordinates, labels = self.curate_path_and_labels()
-            linear_path = {
-                "coordinates": coordinates,
-                "labels": labels,  # ["$\Gamma$","X","X","(1,1,1)"],
-                "delta_q": parameters_["q_spacing"],
-            }
-        else:
-            linear_path = copy.deepcopy(self.q_path)
-            if linear_path:
-                linear_path["delta_q"] = parameters_["q_spacing"]
-
-        self.spectra, self.parameters = produce_bands_weigthed_data(
-            params=parameters_,
-            fc=self.fc,
-            plot=False,
-            linear_path=linear_path,  # CHANGED
-        )
-
         self.settings_intensity.plot_button.disabled = True
-        self.map_widget._update_spectra(self.spectra)  # CHANGED
+        self.map_widget._update_plot()
 
     def download_data(self, _=None):
         """
         Download both the ForceConstants and the spectra json files.
+        TODO: improve the format, should be easy to open somewhere else.
         """
         force_constants_dict = self.fc.to_dict()
 
         filename = "single_crystal.json"
         my_dict = {}
-        for branch in range(len(self.spectra)):
-            my_dict[str(branch)] = self.spectra[branch].to_dict()
-        my_dict.update(
-            {
-                "weighting": self.settings_intensity.weight_button.value,
-                "q_spacing": self.settings_intensity.float_q_spacing.value,
-                "energy_broadening": self.settings_intensity.float_energy_broadening.value,
-                "ebins": self.settings_intensity.int_energy_bins.value,
-                "temperature": self.settings_intensity.float_T.value,
-            }
-        )
+        my_dict["x"] = self._model.final_xspectra.tolist()
+        my_dict["y"] = self._model.y.tolist()
+        my_dict["z"] = self._model.final_zspectra.tolist()
+        my_dict.update(self._model.get_model_state())
         for k in ["weighting", "q_spacing", "temperature"]:
             filename += "_" + k + "_" + str(my_dict[k])
 
@@ -304,27 +262,6 @@ class SingleCrystalFullWidget(ipw.VBox):
         )
         b64_str = base64.b64encode(image_bytes).decode()
         self._download(payload=b64_str, filename=filename + ".png")
-
-    def curate_path_and_labels(
-        self,
-    ):
-        # I do not like this implementation (MB)
-        coordinates = []
-        labels = []
-        path = self.settings_intensity.custom_kpath_text.value
-        linear_paths = path.split("|")
-        for i in linear_paths:
-            scoords = []
-            s = i.split(
-                " - "
-            )  # not i.split("-"), otherwise also the minus of the negative numbers are used for the splitting.
-            for k in s:
-                labels.append(k.strip())
-                # AAA missing support for fractions.
-                l = tuple(map(float, [kk for kk in k.strip().split(" ")]))  # noqa: E741
-                scoords.append(l)
-            coordinates.append(scoords)
-        return coordinates, labels
 
     @staticmethod
     def _download(payload, filename):

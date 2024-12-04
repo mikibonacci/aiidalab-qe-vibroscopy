@@ -13,6 +13,13 @@ from aiidalab_qe_vibroscopy.app.widgets.ir_ramanmodel import IRRamanModel
 from aiidalab_qe_vibroscopy.app.widgets.phononwidget import PhononWidget
 from aiidalab_qe_vibroscopy.app.widgets.phononmodel import PhononModel
 
+from aiidalab_qe_vibroscopy.app.widgets.euphonicwidget import (
+    EuphonicSuperWidget as EuphonicWidget,
+)
+from aiidalab_qe_vibroscopy.app.widgets.euphonicmodel import (
+    EuphonicBaseResultsModel as EuphonicModel,
+)
+
 
 class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
     title = "Vibronic"
@@ -58,9 +65,8 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
 
             tab_data.append(("Raman/IR spectra", irraman_widget))
 
-        needs_dielectri_tab = self._model.needs_dielectric_tab()
-
-        if needs_dielectri_tab:
+        needs_dielectric_tab = self._model.needs_dielectric_tab()
+        if needs_dielectric_tab:
             dielectric_model = DielectricModel()
             dielectric_widget = DielectricWidget(
                 model=dielectric_model,
@@ -68,8 +74,14 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
             )
             tab_data.append(("Dielectric Properties", dielectric_widget))
 
-        if self._model.needs_euphonic_tab():
-            tab_data.append(("Euphonic", ipw.HTML("euphonic_data")))
+        needs_euphonic_tab = self._model.needs_euphonic_tab()
+        if needs_euphonic_tab:
+            euphonic_model = EuphonicModel()
+            euphonic_widget = EuphonicWidget(
+                model=euphonic_model,
+                node=vibro_node,
+            )
+            tab_data.append(("Neutron scattering", euphonic_widget))
 
         # Assign children and titles dynamically
         self.tabs.children = [content for _, content in tab_data]
