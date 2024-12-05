@@ -4,13 +4,7 @@ from aiidalab_qe.common.mvc import Model
 import traitlets as tl
 from aiida.common.extendeddicts import AttributeDict
 from IPython.display import display
-import numpy as np
 from euphonic import ForceConstants
-
-from aiidalab_qe_vibroscopy.utils.euphonic.data_manipulation.intensity_maps import (
-    produce_bands_weigthed_data,
-    generated_curated_data,
-)
 
 
 class SingleCrystalFullModel(Model):
@@ -99,33 +93,33 @@ class SingleCrystalFullModel(Model):
             )
             q_path["delta_q"] = self.q_spacing
 
-        spectra, parameters = produce_bands_weigthed_data(
-            params=self.parameters,
-            fc=self.fc,
-            linear_path=q_path,
-            plot=False,
-        )
+        # spectra, parameters = produce_bands_weigthed_data(
+        #     params=self.parameters,
+        #     fc=self.fc,
+        #     linear_path=q_path,
+        #     plot=False,
+        # )
 
-        if self.custom_path:
-            self.x, self.y = np.meshgrid(
-                spectra[0].x_data.magnitude, spectra[0].y_data.magnitude
-            )
-            (
-                self.final_xspectra,
-                self.final_zspectra,
-                self.ticks_positions,
-                self.ticks_labels,
-            ) = generated_curated_data(spectra)
-        else:
-            # Spectrum2D as output of the powder data
-            self.x, self.y = np.meshgrid(
-                spectra.x_data.magnitude, spectra.y_data.magnitude
-            )
+        # if self.custom_path:
+        #     self.x, self.y = np.meshgrid(
+        #         spectra[0].x_data.magnitude, spectra[0].y_data.magnitude
+        #     )
+        #     (
+        #         self.final_xspectra,
+        #         self.final_zspectra,
+        #         self.ticks_positions,
+        #         self.ticks_labels,
+        #     ) = generated_curated_data(spectra)
+        # else:
+        #     # Spectrum2D as output of the powder data
+        #     self.x, self.y = np.meshgrid(
+        #         spectra.x_data.magnitude, spectra.y_data.magnitude
+        #     )
 
-            # we don't need to curate the powder data,
-            # we can directly use them:
-            self.final_xspectra = spectra.x_data.magnitude
-            self.final_zspectra = spectra.z_data.magnitude
+        #     # we don't need to curate the powder data,
+        #     # we can directly use them:
+        #     self.final_xspectra = spectra.x_data.magnitude
+        #     self.final_zspectra = spectra.z_data.magnitude
 
     def curate_path_and_labels(self, path):
         # This is used to curate the path and labels of the spectra if custom kpath is provided.
