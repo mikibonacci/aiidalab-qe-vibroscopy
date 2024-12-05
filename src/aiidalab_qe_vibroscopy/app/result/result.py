@@ -13,12 +13,14 @@ from aiidalab_qe_vibroscopy.app.widgets.ir_ramanmodel import IRRamanModel
 from aiidalab_qe_vibroscopy.app.widgets.phononwidget import PhononWidget
 from aiidalab_qe_vibroscopy.app.widgets.phononmodel import PhononModel
 
-from aiidalab_qe_vibroscopy.app.widgets.euphonicwidget import (
-    EuphonicSuperWidget as EuphonicWidget,
-)
-from aiidalab_qe_vibroscopy.app.widgets.euphonicmodel import (
-    EuphonicBaseResultsModel as EuphonicModel,
-)
+# from aiidalab_qe_vibroscopy.app.widgets.euphonicwidget import (
+#     EuphonicSuperWidget as EuphonicWidget,
+# )
+# from aiidalab_qe_vibroscopy.app.widgets.euphonicmodel import (
+#     EuphonicBaseResultsModel as EuphonicModel,
+# )
+from aiidalab_qe_vibroscopy.app.widgets.euphonic.model import EuphonicModel
+from aiidalab_qe_vibroscopy.app.widgets.euphonic.widget import EuphonicWidget
 
 
 class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
