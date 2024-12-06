@@ -124,7 +124,7 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
     def on_input_structure_change(self, _=None):
         if not self.input_structure:
             self.reset()
-            
+
         else:
             self.disable_x, self.disable_y, self.disable_z = True, True, True
             pbc = self.input_structure.pbc
