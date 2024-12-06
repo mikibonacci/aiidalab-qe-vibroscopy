@@ -261,7 +261,7 @@ class VibroConfigurationSettingPanel(
         ]
 
         self.rendered = True
-        self._on_change_simulation_type({"new": 0})
+        self._on_change_simulation_type({"new": 1})
 
     def _on_input_structure_change(self, _):
         self.refresh(specific="structure")

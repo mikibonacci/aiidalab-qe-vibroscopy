@@ -111,7 +111,7 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
     def reset(self):
         with self.hold_trait_notifications():
             self.simulation_type = 1
-            self.symmetry_symprec = 1e-5
+            self.symmetry_symprec = self._get_default("symmetry_symprec")
             self.supercell = [2, 2, 2]
             self.supercell_x, self.supercell_y, self.supercell_z = self.supercell
             self.supercell_number_estimator = self._get_default(
@@ -124,7 +124,7 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
     def on_input_structure_change(self, _=None):
         if not self.input_structure:
             self.reset()
-
+            
         else:
             self.disable_x, self.disable_y, self.disable_z = True, True, True
             pbc = self.input_structure.pbc
