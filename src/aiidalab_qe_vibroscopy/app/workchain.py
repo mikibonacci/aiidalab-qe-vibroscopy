@@ -44,10 +44,10 @@ def get_builder(codes, structure, parameters):
     pw_dielectric_code = codes.get("dielectric")["code"]
     phonopy_code = codes.get("phonopy")["code"]
 
-    simulation_mode = parameters["vibronic"].pop("simulation_mode", 1)
+    simulation_mode = parameters["vibronic"].pop("simulation_type", 1)
 
     # Define the supercell matrix
-    supercell_matrix = parameters["vibronic"].pop("supercell_selector", None)
+    supercell_matrix = parameters["vibronic"].pop("supercell", None)
 
     # The following include_all is needed to have forces written
     overrides = {
