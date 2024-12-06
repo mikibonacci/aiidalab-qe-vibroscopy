@@ -76,7 +76,7 @@ class VibroResultsPanel(ResultsPanel[VibroResultsModel]):
             )
             tab_data.append(("Dielectric Properties", dielectric_widget))
 
-        needs_euphonic_tab = self._model.needs_euphonic_tab()
+        needs_euphonic_tab = False  # self._model.needs_euphonic_tab()
         if needs_euphonic_tab:
             euphonic_model = EuphonicModel()
             euphonic_widget = EuphonicWidget(
