@@ -8,6 +8,7 @@ from aiidalab_qe.common.panel import (
 class VibroResourceSettingsModel(PluginResourceSettingsModel):
     """Resource settings for the vibroscopy calculations."""
 
+    title = "Vibronic resources"
     identifier = "vibronic"
 
     def __init__(self, **kwargs):
