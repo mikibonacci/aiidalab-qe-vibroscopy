@@ -1,8 +1,5 @@
 from typing import List, Optional
 
-import pathlib
-import tempfile
-import base64
 
 import matplotlib.style
 import numpy as np
@@ -42,7 +39,11 @@ from euphonic.spectra import apply_kinematic_constraints
 from euphonic.styles import intensity_widget_style
 import euphonic.util
 
-from phonopy.file_IO import write_force_constants_to_hdf5
+
+from aiidalab_qe_vibroscopy.utils.euphonic.data.parameters import (
+    parameters_single_crystal,
+    parameters_powder,
+)
 
 # Dummy tqdm function if tqdm progress bars unavailable
 try:
@@ -84,6 +85,8 @@ class AttrDict(dict):
 In this module we have the functions used to obtain the intensity maps (dynamical structure factor)
 and the powder maps(from euphonic, using the force constants instances as obtained from phonopy.yaml).
 These are then used in the widgets to plot the corresponding quantities.
+
+NOTE: the two main functions here are produce_bands_weigthed_data and produce_powder_data.
 
 PLEASE NOTE: the scattering lengths are tabulated (Euphonic/euphonic/data/sears-1992.json) and are from Sears (1992) Neutron News 3(3) pp26--37.
 """
@@ -174,41 +177,9 @@ def join_q_paths(coordinates: list, labels: list, delta_q=0.1, G=[0, 0, 0]):
 ################################ START INTENSITY PLOT GENERATOR
 ########################
 
-par_dict = {
-    "weighting": "coherent",  # Spectral weighting to plot: DOS, coherent inelastic neutron scattering (default: dos)
-    "grid": None,  # FWHM of broadening on q axis in 1/LENGTH_UNIT (no broadening if unspecified). (default: None)
-    "grid_spacing": 0.1,  # q-point spacing of Monkhorst-Pack grid. (default: 0.1)
-    "energy_unit": "THz",
-    "temperature": 0,  # Temperature in K; enable Debye-Waller factor calculation. (Only applicable when --weighting=coherent). (default: None)
-    #'btol':,
-    "shape": "gauss",  # The broadening shape (default: gauss)
-    "length_unit": "angstrom",
-    "q_spacing": 0.01,  # Target distance between q-point samples in 1/LENGTH_UNIT (default: 0.025)
-    "energy_broadening": 1,
-    "q_broadening": None,  # FWHM of broadening on q axis in 1/LENGTH_UNIT (no broadening if unspecified). (default: None)
-    "ebins": 200,  # Number of energy bins (default: 200)
-    "e_min": 0,
-    "e_max": None,
-    "title": None,
-    "ylabel": "THz",
-    "xlabel": "",
-    "save_json": False,
-    "no_base_style": False,
-    "style": False,
-    "vmin": None,
-    "vmax": None,
-    "save_to": None,
-    "asr": None,  # Apply an acoustic-sum-rule (ASR) correction to the data: "realspace" applies the correction to the force constant matrix in real space. "reciprocal" applies the correction to the dynamical matrix at each q-point. (default: None)
-    "dipole_parameter": 1.0,  # Set the cutoff in real/reciprocal space for the dipole Ewald sum; higher values use more reciprocal terms. If tuned correctly this can result in performance improvements. See euphonic-optimise-dipole-parameter program for help on choosing a good DIPOLE_PARAMETER. (default: 1.0)
-    "use_c": None,
-    "n_threads": None,
-}
-
-parameters = par_dict
-
 
 def produce_bands_weigthed_data(
-    params: Optional[List[str]] = parameters,
+    params: Optional[List[str]] = None,
     fc: ForceConstants = None,
     linear_path=None,
     plot=False,
@@ -229,11 +200,9 @@ def produce_bands_weigthed_data(
     """
     # args = get_args(get_parser(), params)
     if not params:
-        args = AttrDict(copy.deepcopy(parameters))
+        args = AttrDict(copy.deepcopy(parameters_single_crystal))
     else:
-        args = copy.deepcopy(parameters)
-        args.update(params)
-        args = AttrDict(args)
+        args = AttrDict(params)
 
     # redundancy with args...
     calc_modes_kwargs = _calc_modes_kwargs(args)
@@ -297,7 +266,6 @@ def produce_bands_weigthed_data(
             )
     else:
         modes = data
-        split_args = {"btol": args.btol}
         x_tick_labels = get_qpoint_labels(
             modes.qpts, cell=modes.crystal.to_spglib_cell()
         )
@@ -359,9 +327,9 @@ def produce_bands_weigthed_data(
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
 
-    spectra = spectrum.split(**split_args)  # type: List[Spectrum2D]
-    if len(spectra) > 1:
-        pass  # print(f"Found {len(spectra)} regions in q-point path")
+    spectra = spectrum  # .split(**split_args)  # type: List[Spectrum2D]
+    # if len(spectra) > 1:
+    #    pass  # print(f"Found {len(spectra)} regions in q-point path")
 
     if args.save_json:
         spectrum.to_json_file(args.save_json)
@@ -385,63 +353,24 @@ def produce_bands_weigthed_data(
 ################################ START POWDER
 ########################
 
-par_dict_powder = {
-    "weighting": "coherent",  # Spectral weighting to plot: DOS, coherent inelastic neutron scattering (default: dos)
-    "grid": None,  # FWHM of broadening on q axis in 1/LENGTH_UNIT (no broadening if unspecified). (default: None)
-    "grid_spacing": 0.1,  # q-point spacing of Monkhorst-Pack grid. (default: 0.1)
-    "q_min": 0,
-    "q_max": 1,
-    "temperature": None,  # Temperature in K; enable Debye-Waller factor calculation. (Only applicable when --weighting=coherent). (default: None)
-    "ebins": 200,  # Number of energy bins (default: 200)
-    "q_spacing": 0.01,  # Target distance between q-point samples in 1/LENGTH_UNIT (default: 0.025)
-    "energy_broadening": 1,
-    "npts": 150,
-    #'grid':,
-    "energy_unit": "THz",
-    #'btol':,
-    "shape": "gauss",  # The broadening shape (default: gauss)
-    "length_unit": "angstrom",
-    "q_broadening": None,  # FWHM of broadening on q axis in 1/LENGTH_UNIT (no broadening if unspecified). (default: None)
-    "e_min": 0,
-    "e_max": None,
-    "title": None,
-    "ylabel": "THz",
-    "xlabel": "",
-    "save_json": False,
-    "no_base_style": False,
-    "style": False,
-    "vmin": None,
-    "vmax": None,
-    "save_to": None,
-    "asr": None,
-    "dipole_parameter": 1.0,
-    "use_c": None,
-    "n_threads": None,
-    "npts_density": None,
-    "pdos": None,
-    "e_i": None,
-    "sampling": "golden",
-    "jitter": True,
-    "e_f": None,
-    "disable_widgets": True,
-}
 
-parameters_powder = AttrDict(par_dict_powder)
+# parameters_powder = AttrDict(par_dict_powder)
 
 
 def produce_powder_data(
-    params: Optional[List[str]] = parameters_powder,
+    params: Optional[List[str]] = None,
     fc: ForceConstants = None,
     plot=False,
     linear_path=None,
 ) -> None:
     blockPrint()
+    """Read the description of the produce_bands_weigthed_data function for more details.
+    """
 
-    # args = get_args(get_parser(), params)
     if not params:
         args = AttrDict(copy.deepcopy(parameters_powder))
     else:
-        args = AttrDict(copy.deepcopy(params))
+        args = AttrDict(params)
 
     # redundancy with args
     calc_modes_kwargs = _calc_modes_kwargs(args)
@@ -648,156 +577,109 @@ def produce_powder_data(
     matplotlib_save_or_show(save_filename=args.save_to)
 
 
-def generate_force_constant_instance(
-    phonopy_calc=None,
-    path: str = None,
-    summary_name: str = None,
-    born_name: Optional[str] = None,
-    fc_name: str = "FORCE_CONSTANTS",
-    fc_format: Optional[str] = None,
-    mode="stream",  # "download" to have the download of phonopy.yaml and fc.hdf5 . TOBE IMPLEMENTED.
+def produce_Q_section_modes(
+    fc,
+    h,
+    k,
+    Q0=np.array([0, 0, 0]),
+    n_h=100,
+    n_k=100,
+    h_extension=1,
+    k_extension=1,
+    temperature=0,
 ):
-    """
-    Basically allows to obtain the ForceConstants instance from phonopy, both via files (from the second
-    input parameters we have the same one of `euphonic.ForceConstants.from_phonopy`), or via a
-    PhonopyCalculation instance. Respectively, the two ways will support independent euphonic app and integration
-    of Euphonic into aiidalab.
-    """
-    blockPrint()
+    from euphonic import ureg
 
-    ####### This is done to support the detached app (from aiidalab) with the same code:
-    if path and summary_name:
-        fc = euphonic.ForceConstants.from_phonopy(
-            path=path,
-            summary_name=summary_name,
-            fc_name=fc_name,
+    # see get_Q_section
+    # h: array vector
+    # k: array vector
+    # Q0: "point" in Q-space used to build the portion of plane, using also the two vectors h and k.
+    # n_h, n_k: number of points along the two directions. or better, the two vectors.
+
+    def get_Q_section(h, k, Q0, n_h, n_k, h_extension, k_extension):
+        # every point in the space is Q=Q0+dv1*h+dv2*k, which
+
+        q_list = []
+        h_list = []
+        k_list = []
+
+        for dv1 in np.linspace(-h_extension, h_extension, n_h):
+            for dv2 in np.linspace(-k_extension, k_extension, n_k):
+                p = Q0 + dv1 * h + dv2 * k
+                q_list.append(p)  # Q list
+                h_list.append(dv1)  # *h[0])
+                k_list.append(dv2)  # *k[1])
+
+        return np.array(q_list), np.array(h_list), np.array(k_list)
+
+    q_array, h_array, k_array = get_Q_section(
+        h, k, Q0, n_h + 1, n_k + 1, h_extension, k_extension
+    )
+
+    modes = fc.calculate_qpoint_phonon_modes(qpts=q_array, reduce_qpts=False)
+
+    if temperature > 0:
+        blockPrint()
+        dw = _get_debye_waller(
+            temperature * ureg("K"),
+            fc,
+            # grid_spacing=(args.grid_spacing * recip_length_unit),
+            # **calc_modes_kwargs,
         )
-        return fc
-    elif not phonopy_calc:
-        raise NotImplementedError(
-            "Please provide or the files or the phonopy calculation node."
-        )
-
-    ####### This is almost copied from PhonopyCalculation and is done to support functionalities in aiidalab env:
-    from phonopy.interface.phonopy_yaml import PhonopyYaml
-
-    kwargs = {}
-
-    if "settings" in phonopy_calc.inputs:
-        the_settings = phonopy_calc.inputs.settings.get_dict()
-        for key in ["symmetrize_nac", "factor_nac", "subtract_residual_forces"]:
-            if key in the_settings:
-                kwargs.update({key: the_settings[key]})
-
-    if "phonopy_data" in phonopy_calc.inputs:
-        ph = phonopy_calc.inputs.phonopy_data.get_phonopy_instance(**kwargs)
-        p2s_map = phonopy_calc.inputs.phonopy_data.get_cells_mappings()["primitive"][
-            "p2s_map"
-        ]
-        ph.produce_force_constants()
-    elif "force_constants" in phonopy_calc.inputs:
-        ph = phonopy_calc.inputs.force_constants.get_phonopy_instance(**kwargs)
-        p2s_map = phonopy_calc.inputs.force_constants.get_cells_mappings()["primitive"][
-            "p2s_map"
-        ]
-        ph.force_constants = phonopy_calc.inputs.force_constants.get_array(
-            "force_constants"
-        )
-
-    #######
-
-    # Create temporary directory
-    #
-    with tempfile.TemporaryDirectory() as dirpath:
-        # phonopy.yaml generation:
-        phpy_yaml = PhonopyYaml()
-        phpy_yaml.set_phonon_info(ph)
-        phpy_yaml_txt = str(phpy_yaml)
-
-        with open(
-            pathlib.Path(dirpath) / "phonopy.yaml", "w", encoding="utf8"
-        ) as handle:
-            handle.write(phpy_yaml_txt)
-
-        # Force constants hdf5 file generation:
-        # all this is needed to load the euphonic instance, in case no FC are written in phonopy.yaml
-        # which is the case
-
-        write_force_constants_to_hdf5(
-            force_constants=ph.force_constants,
-            filename=pathlib.Path(dirpath) / "fc.hdf5",
-            p2s_map=p2s_map,
-        )
-
-        # Here below we trigger the download mode. Can be improved avoiding the repetitions of lines
-        if mode == "download":
-            with open(
-                pathlib.Path(dirpath) / "phonopy.yaml", "r", encoding="utf8"
-            ) as handle:
-                file_content = handle.read()
-                phonopy_yaml_bitstream = base64.b64encode(file_content.encode()).decode(
-                    "utf-8"
-                )
-
-            with open(
-                pathlib.Path(dirpath) / "fc.hdf5",
-                "rb",
-            ) as handle:
-                file_content = handle.read()
-                fc_hdf5_bitstream = base64.b64encode(file_content).decode()
-
-            return phonopy_yaml_bitstream, fc_hdf5_bitstream
-
-        # Read force constants (fc.hdf5) and summary+NAC (phonopy.yaml)
-
-        fc = euphonic.ForceConstants.from_phonopy(
-            path=dirpath,
-            summary_name="phonopy.yaml",
-            fc_name="fc.hdf5",
-        )
-        # print(filename)
-        # print(dirpath)
-    enablePrint()
-    return fc
-
-
-def export_euphonic_data(output_vibronic, fermi_energy=None):
-    if "phonon_bands" not in output_vibronic:
-        return None
-
-    output_set = output_vibronic.phonon_bands
-
-    if any(not element for element in output_set.creator.caller.inputs.structure.pbc):
-        vibro_bands = output_set.creator.caller.inputs.phonopy_bands_dict.get_dict()
-        # Group the band and band_labels
-        band = vibro_bands["band"]
-        band_labels = vibro_bands["band_labels"]
-
-        grouped_bands = [
-            item
-            for sublist in [band_labels[i : i + 2] for i in range(len(band_labels) - 1)]
-            for item in sublist
-        ]
-        grouped_q = [
-            [tuple(band[i : i + 3]), tuple(band[i + 3 : i + 6])]
-            for i in range(0, len(band) - 3, 3)
-        ]
-        q_path = {
-            "coordinates": grouped_q,
-            "labels": grouped_bands,
-            "delta_q": 0.01,  # 1/A
-        }
+        enablePrint()
     else:
-        q_path = None
+        dw = None
 
-    phonopy_calc = output_set.creator
-    fc = generate_force_constant_instance(phonopy_calc)
-    # bands = compute_bands(fc)
-    # pdos = compute_pdos(fc)
-    return {
-        "fc": fc,
-        "q_path": q_path,
-    }  # "bands": bands, "pdos": pdos, "thermal": None}
+    labels = {
+        "q": f"Q0={[np.round(i,3) for i in Q0]}",
+        "h": f"h={[np.round(i,3) for i in h]}",
+        "k": f"k={[np.round(i,3) for i in k]}",
+    }
+
+    return modes, q_array, h_array, k_array, labels, dw
+
+
+def produce_Q_section_spectrum(
+    modes,
+    q_array,
+    h_array,
+    k_array,
+    ecenter,
+    deltaE=0.5,
+    bins=10,
+    spectrum_type="coherent",
+    dw=None,
+    labels=None,
+):
+    from aiidalab_qe_vibroscopy.utils.euphonic.data.structure_factors import (
+        blockPrint,
+        enablePrint,
+    )
+
+    # bins = 10 # hard coded beacuse here it does not change anything.
+    ebins = _get_energy_bins(
+        modes, bins + 1, emin=ecenter - deltaE, emax=ecenter + deltaE
+    )
+
+    blockPrint()
+    if (
+        spectrum_type == "coherent"
+    ):  # Temperature?? For now let's drop it otherwise it is complicated.
+        spectrum = modes.calculate_structure_factor(dw=dw).calculate_sqw_map(ebins)
+    elif spectrum_type == "dos":
+        spectrum = modes.calculate_dos_map(ebins)
+
+    mu = ecenter
+    sigma = (deltaE) / 2
+
+    # Gaussian weights.
+    weights = np.exp(-((spectrum.y_data.magnitude - mu) ** 2) / 2 * sigma**2) / np.sqrt(
+        2 * np.pi * sigma**2
+    )
+    av_spec = np.average(spectrum.z_data.magnitude, axis=1, weights=weights[:-1])
+    enablePrint()
+
+    return av_spec, q_array, h_array, k_array, labels
 
 
 def generated_curated_data(spectra):
@@ -806,44 +688,25 @@ def generated_curated_data(spectra):
     ticks_positions = []
     ticks_labels = []
 
-    final_xspectra = spectra[0].x_data.magnitude
-    final_zspectra = spectra[0].z_data.magnitude
-    for i in spectra[1:]:
-        final_xspectra = np.concatenate((final_xspectra, i.x_data.magnitude), axis=0)
-        final_zspectra = np.concatenate((final_zspectra, i.z_data.magnitude), axis=0)
+    final_xspectra = spectra.x_data.magnitude
+    final_zspectra = spectra.z_data.magnitude
 
-    for j in spectra[:]:
-        # each spectra has the .x_tick_labels attribute, for the bands.
-        shift = False
-        for k in j.x_tick_labels:
-            ticks_positions.append(k[0])
-            # ticks_labels.append("Gamma") if k[1] == '$\\Gamma$' else ticks_labels.append(k[1])
-            ticks_labels.append(k[1])
+    for k in spectra.x_tick_labels:
+        ticks_positions.append(k[0])
+        # ticks_labels.append("Gamma") if k[1] == '$\\Gamma$' else ticks_labels.append(k[1])
+        ticks_labels.append(k[1])
 
-            # Here below we check if we are starting a new group,
-            # i.e. if the xticks count is starting again from 0
-            # I also need to shift correctly the next index, which
-            # refers to the zero of the ticks_positions[-1].
-            if len(ticks_positions) > 1:
-                if ticks_positions[-1] < ticks_positions[-2] or shift:
-                    if ticks_positions[-1] == 0:  # new linear path
-                        ticks_positions.pop()
-                        last = ticks_labels.pop().strip()
+        if len(ticks_positions) > 1:
+            if (
+                ticks_positions[-1] == ticks_positions[-2] + 1
+                and ticks_labels[-1] != ticks_labels[-2]
+            ):
+                ticks_labels[-2] = ticks_labels[-2] + "|" + ticks_labels[-1]
+                ticks_positions.pop()
+                ticks_labels.pop()
 
-                        # if the same index, do not join, just write once
-                        if ticks_labels[-1].strip() != last:
-                            ticks_labels[-1] = ticks_labels[-1].strip() + "|" + last
-                        # the shift is needed because if this index was zero,
-                        # the next one has to be shifted because it means that
-                        # the index counting was restarted from zero,
-                        # i.e. this is a new linear path.
-
-                        shift = True
-                    else:
-                        ticks_positions[-1] = ticks_positions[-1] + ticks_positions[-2]
-
-                if ticks_labels[-1] == ticks_labels[-2]:
-                    ticks_positions.pop()
-                    ticks_labels.pop()
+            if ticks_labels[-1] == ticks_labels[-2]:
+                ticks_positions.pop()
+                ticks_labels.pop()
 
     return final_xspectra, final_zspectra, ticks_positions, ticks_labels
