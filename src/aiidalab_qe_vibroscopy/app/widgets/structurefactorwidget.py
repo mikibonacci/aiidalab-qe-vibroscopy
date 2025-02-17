@@ -328,7 +328,7 @@ class EuphonicStructureFactorWidget(ipw.VBox):
                     <b>Q-plane definition</b>: <br>
                     To define a plane in the reciprocal space, <br>
                     you should define a point in the reciprocal space, Q<sub>0</sub>,
-                    and two vectors h&#8407; and k&#8407;. Then, each Q point is defined as: Q = Q<sub>0</sub> + &alpha;*h&#8407; + &beta;*k&#8407;. <br>
+                    and two vectors h; and k;. Then, each Q point is defined as: Q = Q<sub>0</sub> + &alpha;*h + &beta;*k. <br>
                     Then you can select the number of q points in both directions and the &alpha; and &beta; parameters. <br>
                     Coordinates are reciprocal lattice units (rlu).
                 </div>
