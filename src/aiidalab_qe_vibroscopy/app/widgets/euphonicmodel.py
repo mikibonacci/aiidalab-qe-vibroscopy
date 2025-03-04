@@ -1,7 +1,10 @@
 import numpy as np
 import traitlets as tl
 import copy
+
 from IPython.display import display
+
+from aiidalab_qe.common.mvc import Model
 
 from aiidalab_qe_vibroscopy.utils.euphonic.data.structure_factors import (
     AttrDict,
@@ -11,50 +14,49 @@ from aiidalab_qe_vibroscopy.utils.euphonic.data.structure_factors import (
     produce_Q_section_spectrum,
     produce_Q_section_modes,
 )
-
 from aiidalab_qe_vibroscopy.utils.euphonic.data.phonopy_interface import (
     generate_force_constant_from_phonopy,
 )
-
 from aiidalab_qe_vibroscopy.utils.euphonic.data.export_vibronic_to_euphonic import (
     export_euphonic_data,
 )
-
 from aiidalab_qe_vibroscopy.utils.euphonic.data.parameters import (
     parameters_single_crystal,
     parameters_powder,
 )
 
 
-from aiidalab_qe.common.mvc import Model
-
-
 class EuphonicResultsModel(Model):
-    """Model for the neutron scattering results panel."""
+    """Model for the neutron scattering results panel.
 
-    # Here we mode all the model and data-controller, i.e. all the data and their
-    # manipulation to produce new spectra.
-    # plot-controller, i.e. scales, colors and so on, should be attached to the widget, I think.
-    # the above last point should be discussed more.
+    Here we define all the model and data-controller, i.e. all the data and their
+    manipulation to produce new spectra.
+    Differently, the plot-controller, i.e. scales, colors and so on, should be attached to the widget, I think, as
+    they are not really changing the data inside the model.
 
-    # For now, we do only the first of the following:
-    # 1. single crystal data: sc
-    # 2. powder average: pa
-    # 3. Q planes: qp
+    For now, support single crystal, powder and q_planes cases.
 
-    # Settings for single crystal and powder average
+    NOTE: the traits should have the same name of the parameters contained the aiidalab_qe_vibroscopy/utils/euphonic/data/parameters.py file.
+    in this way, we can get_model_state() and update the parameters dictionary in the data-controller.
+    Only *energy_units* should not match (energy_unit in the parameters.py), as we always use meV in the methods to obtain spectra.
+    it is possible to change it by cleaning up the produce_bands_weigthed_data method, but it is not necessary for now.
+    """
+
+    # Here bw we define the common traits of the model. Later (in the init), we will inject
+    # the specific ones for the single crystal, powder and q_planes cases.
     q_spacing = tl.Float(0.1)  # q-spacing for the linear path
     energy_broadening = tl.Float(0.5)  # energy broadening
-    energy_bins = tl.Int(200)  # energy bins
+    ebins = tl.Int(200)  # energy bins
     temperature = tl.Float(0)  # temperature
     weighting = tl.Unicode("coherent")  # weighting
     energy_units = tl.Unicode("meV")  # energy units
     intensity_filter = tl.List(
         trait=tl.Float(), default_value=[0, 100]
     )  # intensity filter
+    info_legend_text = tl.Unicode("")
 
-    THz_to_meV = 4.13566553853599  # conversion factor.
-    THz_to_cm1 = 33.3564095198155  # conversion factor.
+    meV_to_THz = 0.242  # conversion factor.
+    meV_to_cm_minus_1 = 8.1  # conversion factor.
 
     def __init__(
         self,
@@ -75,6 +77,8 @@ class EuphonicResultsModel(Model):
         if node:  # qe app mode.
             self.vibro = node
 
+        # Inject the specific traits for the single crystal, powder and q_planes cases.
+        # and we define the specific callback function for the spectra generation.
         if self.spectrum_type == "single_crystal":
             self._inject_single_crystal_settings()
         elif self.spectrum_type == "powder":
@@ -87,6 +91,7 @@ class EuphonicResultsModel(Model):
             setattr(self, k, v)
 
     def _get_default(self, trait):
+        # I need to treat differently the traits that are lists, as they have a different default value.
         if trait in ["h_vec", "k_vec"]:
             return [1, 1, 1, 100, 1]
         elif trait == "Q0_vec":
@@ -96,11 +101,14 @@ class EuphonicResultsModel(Model):
         return self.traits()[trait].default_value
 
     def get_model_state(self):
+        # This will give me the necessary part to update the parameters dictionary,
+        # to be used in the data-controller.
         return {trait: getattr(self, trait) for trait in self.traits()}
 
     def reset(
         self,
     ):
+        # Hold the trait firing when resetting the model.
         with self.hold_trait_notifications():
             for trait in self.traits():
                 if trait not in ["intensity_filter", "energy_units"]:
@@ -108,17 +116,18 @@ class EuphonicResultsModel(Model):
 
     def fetch_data(self):
         """Fetch the data from the database or from the uploaded files."""
-        # 1. from aiida, so we have the node
+        # 1. from QeApp
         if hasattr(self, "fc"):
-            # we already have the data (this happens if I clone the model with already the data inside)
+            # we already have the data (this happens also if I clone the model with already the data inside)
             return
         if self.vibro:
             ins_data = export_euphonic_data(self.vibro)
             self.fc = ins_data["fc"]
             self.q_path = ins_data["q_path"]
-        # 2. from uploaded files...
+
+        # 2. from uploaded files - detached app mode
         else:
-            # here we just use upload_widget as MVC all together, for simplicity.
+            # here we just use upload_widget as and MVC bundle, for simplicity (it is a small component).
             # moreover, this part is not used in the current QE app.
             self.fc = self.upload_widget._read_phonopy_files(
                 fname=self.fname,
@@ -165,13 +174,14 @@ class EuphonicResultsModel(Model):
     def get_spectra(
         self,
     ):
-        # This is used to update the spectra when the parameters are changed
+        # This is used to update the spectra of single crystal and powder cases.
+        # In the case of q_planes, we update the spectra in the _get_qsection_spectra method.
 
         if self.spectrum_type == "q_planes":
             self._get_qsection_spectra()
         else:
             self.parameters.update(self.get_model_state())
-            # custom linear path
+            # custom path case (some non 3D systems, or custom linear path from user inputs)
             custom_kpath = self.custom_kpath if hasattr(self, "custom_kpath") else ""
             if len(custom_kpath) > 1:
                 coordinates, labels = self._curate_path_and_labels()
@@ -185,6 +195,12 @@ class EuphonicResultsModel(Model):
                 if qpath:
                     qpath["delta_q"] = self.parameters["q_spacing"]
 
+            # we need to convert back the broadening to meV, as in the get_spectra we use the meV units.
+            self.parameters["energy_broadening"] = (
+                self.energy_broadening
+                / self.energy_conversion_factor(meV_to=self.energy_units)
+            )
+
             spectra, parameters = self._callback_spectra_generation(
                 params=AttrDict(self.parameters),
                 fc=self.fc,
@@ -192,11 +208,18 @@ class EuphonicResultsModel(Model):
                 plot=False,
             )
 
+        if self.spectrum_type == "q_planes":
+            return
+
         # curated spectra (labels and so on...)
+        self.x, self.y_meV = np.meshgrid(
+            spectra.x_data.magnitude, spectra.y_data.magnitude
+        )
+        self.y, self.y_meV = self.y_meV[:, 0], self.y_meV[:, 0]
+        # convert, because it is in meV, as output from Euphonic (the units are
+        # described in aiidalab_qe_vibroscopy/utils/euphonic/data/parameters.py)
+        self._update_energy_units()
         if self.spectrum_type == "single_crystal":  # single crystal case
-            self.x, self.y = np.meshgrid(
-                spectra.x_data.magnitude, spectra.y_data.magnitude
-            )
             (
                 final_xspectra,
                 final_zspectra,
@@ -208,40 +231,28 @@ class EuphonicResultsModel(Model):
             self.ticks_labels = ticks_labels
 
             self.z = final_zspectra.T
-            self.y = self.y[:, 0]
             self.x = list(
                 range(self.ticks_positions[-1] + 1)
             )  # we have, instead, the ticks positions and labels
 
-            # we need to cut out some of the x and y data, as they are not used in the plot.
-            self.y = self.y[: np.shape(self.z)[0]]
-            self.x = self.x[: np.shape(self.z)[1]]
-
-            self.ylabel = self.energy_units
-
         elif self.spectrum_type == "powder":  # powder case
             # Spectrum2D as output of the powder data
-            self.x, self.y = np.meshgrid(
-                spectra.x_data.magnitude, spectra.y_data.magnitude
-            )
 
             # we don't need to curate the powder data, at variance with the single crystal case.
             # We can directly use them:
             self.xlabel = "|q| (1/A)"
+
             self.x = spectra.x_data.magnitude
-            self.y = self.y[:, 0]
             self.z = spectra.z_data.magnitude.T
 
-            # we need to cut out some of the x and y data, as they are not used in the plot.
-            self.y = self.y[: np.shape(self.z)[0]]
-            self.x = self.x[: np.shape(self.z)[1]]
-
-        elif self.spectrum_type == "q_planes":
-            pass
         else:
             raise ValueError("Spectrum type not recognized:", self.spectrum_type)
 
-        self.y = self.y * self.energy_conversion_factor(self.energy_units, "meV")
+        # we need to cut out some of the x and y data, as they are not used in the plot.
+        self.y = self.y[: np.shape(self.z)[0]]
+        self.x = self.x[: np.shape(self.z)[1]]
+
+        self.ylabel = self.energy_units
 
     def _get_qsection_spectra(
         self,
@@ -256,9 +267,15 @@ class EuphonicResultsModel(Model):
                 "h_extension": self.h_vec[-1],
                 "k_extension": self.k_vec[-1],
                 "Q0": np.array([i for i in self.Q0_vec[:]]),
-                "ecenter": self.center_e,
-                "deltaE": self.energy_broadening,
-                "bins": self.energy_bins,
+                "ecenter": self.center_e
+                / self.energy_conversion_factor(
+                    meV_to=self.energy_units
+                ),  # convert to meV
+                "deltaE": self.energy_broadening
+                / self.energy_conversion_factor(
+                    meV_to=self.energy_units
+                ),  # convert to meV
+                "ebins": self.ebins,
                 "spectrum_type": self.weighting,
                 "temperature": self.temperature,
             }
@@ -283,7 +300,7 @@ class EuphonicResultsModel(Model):
             k_array,
             ecenter=self.parameters_qplanes.ecenter,
             deltaE=self.parameters_qplanes.deltaE,
-            bins=self.parameters_qplanes.bins,
+            bins=self.parameters_qplanes.ebins,
             spectrum_type=self.parameters_qplanes.spectrum_type,
             dw=dw,
             labels=labels,
@@ -291,52 +308,104 @@ class EuphonicResultsModel(Model):
         self.xlabel = self.labels["h"]
         self.ylabel = self.labels["k"]
 
-    def energy_conversion_factor(self, new, old):
-        # TODO: check this is correct.
-        if new == old:
+    def energy_conversion_factor(self, meV_to="meV"):
+        if meV_to == "meV" or not meV_to:
             return 1
-        if new == "meV":
-            if old == "THz":
-                return self.THz_to_meV
-            elif old == "1/cm":
-                return 1 / self.THz_to_cm1 * self.THz_to_meV
-        elif new == "THz":
-            if old == "meV":
-                return 1 / self.THz_to_meV
-            elif old == "1/cm":
-                return 1 / self.THz_to_cm1
-        elif new == "1/cm":
-            if old == "meV":
-                return 1 / self.THz_to_meV * self.THz_to_cm1
-            elif old == "THz":
-                return self.THz_to_cm1
+        elif meV_to == "THz":
+            return self.meV_to_THz
+        elif meV_to == "1/cm":
+            return self.meV_to_cm_minus_1
 
-    def _update_energy_units(self, new, old):
-        # This is used to update the energy units in the plot.
-        self.y = self.y * self.energy_conversion_factor(new, old)
-        self.ylabel = self.energy_units
+    def _update_energy_units(self, old_units=None, new_units=None):
+        """This is used to update the energy units in the plot.
+
+        In practice, we convert back to meV, if possible, and then to the new units.
+        """
+
+        if not new_units:
+            new_units = self.energy_units
+
+        if self.spectrum_type in ["single_crystal", "powder"]:
+            self.y = (
+                self.y
+                / self.energy_conversion_factor(meV_to=old_units)
+                * self.energy_conversion_factor(meV_to=new_units)
+            )
+            self.ylabel = self.energy_units
+        elif self.spectrum_type == "q_planes":
+            self.center_e = (
+                self.center_e
+                / self.energy_conversion_factor(meV_to=old_units)
+                * self.energy_conversion_factor(meV_to=new_units)
+            )
+
+        if old_units:
+            self.energy_broadening = (
+                self.energy_broadening
+                / self.energy_conversion_factor(meV_to=old_units)
+                * self.energy_conversion_factor(meV_to=new_units)
+            )
 
     def _curate_path_and_labels(
         self,
     ):
-        # This is used to curate the path and labels of the spectra if custom kpath is provided.
-        # I do not like this implementation (MB)
+        """Produce curated path and labels of the spectra if custom kpath is provided.
+
+
+        The custom kpath is a string with the format:
+        '0 0 0 - 1 1 1 | 1 1 1 - 1 0 0 | 1 0 0 - 0 0 0'
+
+        i.e. each linear path is separated by '|', and each q-points in them are separated by ' - '.
+        """
+
+        # I did it, but I do not like this implementation (MB)
+
         coordinates = []
         labels = []
         path = self.custom_kpath
+
+        # we split the path in the linear paths
         linear_paths = path.split("|")
-        for i in linear_paths:
+
+        # for each linear path, we split
+        # into initial and final q_point
+        for q_point in linear_paths:
             scoords = []
-            s = i.split(
+            s = q_point.split(
                 " - "
-            )  # not i.split("-"), otherwise also the minus of the negative numbers are used for the splitting.
+            )  # not q_point.split("-"), otherwise also the minus of the negative numbers are used for the splitting.
+
+            # loop over the coordinates, to get the labels and the coordinates
+            # (which are a string and float of that string)
             for k in s:
                 labels.append(k.strip())
+                # after the label, we produce the coordinates as floats
                 # AAA missing support for fractions.
                 l = tuple(map(float, [kk for kk in k.strip().split(" ")]))  # noqa: E741
                 scoords.append(l)
             coordinates.append(scoords)
         return coordinates, labels
+
+    def generate_info_legend(self, download_mode=False):
+        """Generate the info legend using templates."""
+        from importlib_resources import files
+        from jinja2 import Environment
+        from aiidalab_qe_vibroscopy.utils.euphonic import templates
+
+        env = Environment()
+        info_legend_template = (
+            files(templates).joinpath("info_legend.html.j2").read_text()
+        )
+        info_legend_text = env.from_string(info_legend_template).render(
+            {
+                "spectrum_type": self.spectrum_type,
+            }
+        )
+
+        if download_mode:
+            self.readme_text = info_legend_text
+        else:
+            self.info_legend_text = info_legend_text
 
     def produce_phonopy_files(self):
         # This is used to produce the phonopy files from
@@ -384,6 +453,7 @@ class EuphonicResultsModel(Model):
         model_state["filename"] = filename
         model_state["cmap"] = "cividis"
 
+        # we provide also a plotting script
         plotting_script = generate_from_template(model_state)
         plotting_script_data = base64.b64encode(plotting_script.encode()).decode()
         plotting_script_filename = f"plot_script_{random_number}.py"

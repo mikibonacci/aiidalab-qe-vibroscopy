@@ -1,10 +1,10 @@
 import ipywidgets as ipw
+import numpy as np
+import plotly.graph_objs as go
+
 from IPython.display import display
 
-import numpy as np
-
-# ADD ALL THE IMPORTS.
-import plotly.graph_objs as go
+from aiidalab_qe.common.infobox import InfoBox
 
 from aiidalab_qe_vibroscopy.app.widgets.euphonicmodel import EuphonicResultsModel
 
@@ -13,10 +13,10 @@ COLORBAR_DICT = dict(orientation="v", showticklabels=False, x=1, thickness=10, l
 
 
 class EuphonicStructureFactorWidget(ipw.VBox):
-    """Description.
+    """The true Euphonic widget (to not be confused with the collective EuphonicWidget).
 
-    Collects all the button and widget used to define settings for Neutron dynamic structure factor,
-    in all the three cases: single crystal, powder, and q-section....
+    These is a three-fold widget: it can be a single-crystal, a powder or a q-plane widget.
+    This is decided by the spectrum_type attribute of the model.
     """
 
     def __init__(
@@ -24,33 +24,63 @@ class EuphonicStructureFactorWidget(ipw.VBox):
         model: EuphonicResultsModel,
         node=None,
         spectrum_type="single_crystal",
-        detached_app=False,
         **kwargs,
     ):
         super().__init__()
         self._model = model
         if node:
             self._model.vibro = node
-        self._model.spectrum_type = spectrum_type
-        self._model.detached_app = detached_app
+        if not hasattr(self._model, "spectrum_type"):
+            self._model.spectrum_type = spectrum_type
+
         self.rendered = False
 
     def render(self):
-        """Render the widget.
+        """Renders the widget.
 
-        This means render the plot button.
+        Basically, we have three main parts:
+        - a toggle button to display plot info, parameters descriptions and so on
+        - parameters
+        - plot
+
+        we first create the common widgets (for the three spectrum_type cases), then we add the specific ones
+        via if-elif-else.
         """
         if self.rendered:
             return
 
+        # 1 - info part
+        self.about_toggle = ipw.ToggleButton(
+            layout=ipw.Layout(width="20%"),
+            button_style="",
+            icon="info",
+            value=False,
+            description="Plot info",
+            tooltip="Info on the parameters and plots",
+            disabled=False,
+        )
+        self.about_toggle.observe(self.display_info_legend, names="value")
+
+        self.info_legend = ipw.HTML("")
+        ipw.dlink(
+            (self._model, "info_legend_text"),
+            (self.info_legend, "value"),
+        )
+        self.info_legend_infobox = InfoBox(
+            children=[self.info_legend],
+        )
+        self.info_legend_infobox.layout.display = "none"
+        self._model.generate_info_legend()
+
+        # 2 - parameters part
         slider_intensity = ipw.FloatRangeSlider(
             value=[1, 100],  # Default selected interval
-            min=1,
+            min=0,
             max=100,
-            step=1,
+            step=0.1,
             orientation="horizontal",
             readout=True,
-            readout_format=".0f",
+            readout_format=".1f",
             layout=ipw.Layout(
                 width="400px",
             ),
@@ -60,12 +90,9 @@ class EuphonicStructureFactorWidget(ipw.VBox):
             (self._model, "intensity_filter"),
         )
         slider_intensity.observe(self._update_intensity_filter, "value")
+        specification_intensity = ipw.HTML("Intensity window (%):")
 
-        specification_intensity = ipw.HTML(
-            "Intensity window (relative to the maximum intensity at T=0K):"
-        )
-
-        E_units_ddown = ipw.Dropdown(
+        E_units_dropdown = ipw.Dropdown(
             options=[
                 ("meV", "meV"),
                 ("THz", "THz"),
@@ -79,19 +106,21 @@ class EuphonicStructureFactorWidget(ipw.VBox):
             ),
         )
         ipw.link(
-            (E_units_ddown, "value"),
+            (E_units_dropdown, "value"),
             (self._model, "energy_units"),
         )
-        E_units_ddown.observe(self._update_energy_units, "value")
+        E_units_dropdown.observe(self._update_energy_units, "value")
 
-        q_spacing = ipw.FloatText(
+        q_spacing = ipw.BoundedFloatText(
             value=self._model.q_spacing,
-            step=0.001,
+            step=0.01,
+            min=0.01,
             description="q step (1/A)",
             tooltip="q spacing in 1/A",
             layout=ipw.Layout(
                 width="auto",
             ),
+            continuous_update=True,
         )
         ipw.link(
             (self._model, "q_spacing"),
@@ -99,43 +128,51 @@ class EuphonicStructureFactorWidget(ipw.VBox):
         )
         q_spacing.observe(self._on_setting_change, names="value")
 
-        energy_broadening = ipw.FloatText(
+        self.energy_broadening = ipw.BoundedFloatText(
             value=self._model.energy_broadening,
             step=0.01,
+            min=0,
             description="&Delta;E (meV)",
             tooltip="Energy broadening in meV",
             layout=ipw.Layout(
                 width="auto",
             ),
+            continuous_update=True,
         )
         ipw.link(
             (self._model, "energy_broadening"),
-            (energy_broadening, "value"),
+            (self.energy_broadening, "value"),
         )
-        energy_broadening.observe(self._on_setting_change, names="value")
+        self.energy_broadening.observe(self._on_setting_change, names="value")
 
-        energy_bins = ipw.IntText(
-            value=self._model.energy_bins,
+        ebins = ipw.BoundedIntText(
+            value=self._model.ebins,
+            min=1,
+            max=5000,
             description="#E bins",
             tooltip="Number of energy bins",
             layout=ipw.Layout(
                 width="auto",
             ),
+            continuous_update=True,
         )
         ipw.link(
-            (self._model, "energy_bins"),
-            (energy_bins, "value"),
+            (self._model, "ebins"),
+            (ebins, "value"),
         )
-        energy_bins.observe(self._on_setting_change, names="value")
+        ebins.observe(self._on_setting_change, names="value")
 
-        self.temperature = ipw.FloatText(
+        self.temperature = ipw.BoundedFloatText(
             value=self._model.temperature,
             step=0.01,
+            min=0,
+            max=1000,
             description="T (K)",
             disabled=False,
             layout=ipw.Layout(
                 width="auto",
             ),
+            continuous_update=True,
         )
         ipw.link(
             (self._model, "temperature"),
@@ -143,13 +180,13 @@ class EuphonicStructureFactorWidget(ipw.VBox):
         )
         self.temperature.observe(self._on_setting_change, names="value")
 
-        weight_button = ipw.ToggleButtons(
+        weight_button = ipw.Dropdown(
             options=[
-                ("Coherent", "coherent"),
-                ("DOS", "dos"),
+                ("S(Q, ω)", "coherent"),
+                ("DOS map", "dos"),
             ],
             value=self._model.weighting,
-            description="weight:",
+            description="Plot mode:",
             disabled=False,
             style={"description_width": "initial"},
             layout=ipw.Layout(
@@ -194,9 +231,11 @@ class EuphonicStructureFactorWidget(ipw.VBox):
             lambda x: not x,
         )
 
-        self._init_view()  # generate the self.figure_container
+        self._init_view()  # this will generate the self.figure_container
 
         self.children += (
+            self.about_toggle,
+            self.info_legend_infobox,
             ipw.HBox(
                 [
                     specification_intensity,
@@ -211,10 +250,10 @@ class EuphonicStructureFactorWidget(ipw.VBox):
                 [
                     ipw.VBox(
                         [
-                            E_units_ddown,
+                            E_units_dropdown,
                             q_spacing,
-                            energy_broadening,
-                            energy_bins,
+                            self.energy_broadening,
+                            ebins,
                             self.temperature,
                             weight_button,
                             self.plot_button,
@@ -222,7 +261,7 @@ class EuphonicStructureFactorWidget(ipw.VBox):
                             self.download_button,
                         ],
                         layout=ipw.Layout(
-                            justify_content="flex-start", max_width="200px"
+                            justify_content="flex-start", max_width="250px"
                         ),
                     ),
                     self.figure_container,
@@ -231,24 +270,11 @@ class EuphonicStructureFactorWidget(ipw.VBox):
         )
 
         if self._model.spectrum_type == "single_crystal":
-            self.custom_kpath_description = ipw.HTML(
-                """
-            <div style="padding-top: 0px; padding-bottom: 0px; line-height: 140%;">
-                <b>Custom q-points path for the structure factor</b>: <br>
-                we can provide it via a specific format: <br>
-                (1) each linear path should be divided by '|'; <br>
-                (2) each path is composed of 'qxi qyi qzi - qxf qyf qzf' where qxi and qxf are, respectively,
-                the start and end x-coordinate of the q direction, in reciprocal lattice units (rlu).<br>
-                An example path is: '0 0 0 - 1 1 1 | 1 1 1 - 0.5 0.5 0.5'. <br>
-                For now, we do not support fractions (i.e. we accept 0.5 but not 1/2).
-            </div>
-            """
-            )
-
             self.custom_kpath_text = ipw.Text(
                 value="",
                 description="Custom path (rlu):",
                 style={"description_width": "initial"},
+                continuous_update=True,
             )
             custom_style = '<style>.custom-font { font-family: "Monospaced"; font-size: 16px; }</style>'
             display(ipw.HTML(custom_style))
@@ -259,15 +285,15 @@ class EuphonicStructureFactorWidget(ipw.VBox):
             )
             self.custom_kpath_text.observe(self._on_setting_change, names="value")
 
-            self.children += (
-                self.custom_kpath_description,
-                self.custom_kpath_text,
-            )
-        # fi self._model.spectrum_type == "single_crystal"
+            self.children += (self.custom_kpath_text,)
+
         elif self._model.spectrum_type == "powder":
-            self.qmin = ipw.FloatText(
+            self.qmin = ipw.BoundedFloatText(
                 value=0,
+                min=0,
+                max=1,
                 description="|q|<sub>min</sub> (1/A)",
+                continuous_update=True,
             )
             ipw.link(
                 (self._model, "q_min"),
@@ -275,10 +301,13 @@ class EuphonicStructureFactorWidget(ipw.VBox):
             )
             self.qmin.observe(self._on_setting_change, names="value")
 
-            self.qmax = ipw.FloatText(
+            self.qmax = ipw.BoundedFloatText(
                 step=0.01,
                 value=1,
+                min=0,
+                max=1,
                 description="|q|<sub>max</sub> (1/A)",
+                continuous_update=True,
             )
             ipw.link(
                 (self._model, "q_max"),
@@ -286,17 +315,6 @@ class EuphonicStructureFactorWidget(ipw.VBox):
             )
             self.qmax.observe(self._on_setting_change, names="value")
 
-            # int_npts fixed to 500 for now.
-            # self.int_npts = ipw.IntText(
-            #    value=100,
-            #    description="npts",
-            #    tooltip="Number of points to be used in the average sphere.",
-            # )
-            # ipw.link(
-            #    (self._model, "npts"),
-            #    (self.int_npts, "value"),
-            # )
-            # self.int_npts.observe(self._on_setting_change, names="value")
             self.children += (
                 ipw.HBox(
                     [
@@ -304,21 +322,24 @@ class EuphonicStructureFactorWidget(ipw.VBox):
                         self.qmax,
                     ],
                 ),
-                # self.int_npts,
             )
 
-        # fi self._model.spectrum_type == "powder"
         elif self._model.spectrum_type == "q_planes":
-            E_units_ddown.layout.display = "none"
             q_spacing.layout.display = "none"
 
             self.ecenter = ipw.FloatText(
                 value=0,
-                description="E (meV)",
+                description="E cut (meV)",
+                continuous_update=True,
             )
             ipw.link(
                 (self._model, "center_e"),
                 (self.ecenter, "value"),
+            )
+            ipw.dlink(
+                (self._model, "energy_units"),
+                (self.ecenter, "description"),
+                transform=lambda x: f"E ({x})",
             )
             self.ecenter.observe(self._on_setting_change, names="value")
 
@@ -326,17 +347,19 @@ class EuphonicStructureFactorWidget(ipw.VBox):
                 """
                 <div style="padding-top: 0px; padding-bottom: 0px; line-height: 140%;">
                     <b>Q-plane definition</b>: <br>
-                    To define a plane in the reciprocal space, <br>
-                    you should define a point in the reciprocal space, Q<sub>0</sub>,
-                    and two vectors h; and k;. Then, each Q point is defined as: Q = Q<sub>0</sub> + &alpha;*h + &beta;*k. <br>
-                    Then you can select the number of q points in both directions and the &alpha; and &beta; parameters. <br>
-                    Coordinates are reciprocal lattice units (rlu).
                 </div>
                 """
             )
 
             self.Q0_vec = ipw.HBox(
-                [ipw.FloatText(value=0, layout={"width": "60px"}) for j in range(3)]
+                [
+                    ipw.FloatText(
+                        value=0,
+                        layout={"width": "60px"},
+                        continuous_update=True,
+                    )
+                    for j in range(3)
+                ]
                 + [
                     ipw.HTML(
                         "N<sup>h</sup><sub>q</sub>, N<sup>k</sup><sub>q</sub> &darr;",
@@ -348,7 +371,11 @@ class EuphonicStructureFactorWidget(ipw.VBox):
 
             self.h_vec = ipw.HBox(
                 [
-                    ipw.FloatText(value=1, layout={"width": "60px"})  # coordinates
+                    ipw.FloatText(
+                        value=1,
+                        layout={"width": "60px"},
+                        continuous_update=True,
+                    )  # coordinates
                     for j in range(3)
                 ]
                 + [
@@ -357,7 +384,14 @@ class EuphonicStructureFactorWidget(ipw.VBox):
                 ]  # number of points along this dir, i.e. n_h; and multiplicative factor alpha
             )
             self.k_vec = ipw.HBox(
-                [ipw.FloatText(value=1, layout={"width": "60px"}) for j in range(3)]
+                [
+                    ipw.FloatText(
+                        value=1,
+                        layout={"width": "60px"},
+                        continuous_update=True,
+                    )
+                    for j in range(3)
+                ]
                 + [
                     ipw.IntText(value=100, layout={"width": "60px"}),
                     ipw.IntText(value=1, layout={"width": "60px"}),
@@ -386,16 +420,26 @@ class EuphonicStructureFactorWidget(ipw.VBox):
                 self.h_widget,
                 self.k_widget,
             )
-        # fi self._model.spectrum_type == "q_planes"
 
+        # RENDERING IS DONE, SO:
         self.rendered = True
 
     def _init_view(self, _=None):
+        # for safety, we fetch the data again (should have happened already in the EuophonicWidget).
+        # if already there, this model method will not do anything.
         self._model.fetch_data()
+
+        # we need to initialize the figure container
         if not hasattr(self, "fig"):
             self.fig = go.FigureWidget()
-            self.fig.update_layout(margin=dict(l=20, r=0, t=0, b=20))
+            self.fig.update_layout(
+                margin=dict(l=20, r=0, t=0, b=20),
+                yaxis=dict(autorange=True),
+            )
+
             self.figure_container = ipw.VBox([self.fig])
+
+        # we populate the plot calling the update method
         self._update_plot()
 
     def _on_weight_button_change(self, change):
@@ -409,8 +453,7 @@ class EuphonicStructureFactorWidget(ipw.VBox):
         self.plot_button.disabled = False
 
     def _update_plot(self, _=None):
-        # update the spectra, i.e. the data contained in the _model.
-
+        # update the spectra, i.e. the data to be plotted contained in the _model.
         self._model.get_spectra()
 
         if self._model.spectrum_type == "q_planes":
@@ -422,7 +465,7 @@ class EuphonicStructureFactorWidget(ipw.VBox):
 
         self.fig.update_layout(yaxis_title=self._model.ylabel)
 
-        # changing the path wants also a change in the labels
+        # a specific q-path wants the appropriate labels
         if hasattr(self._model, "ticks_positions") and hasattr(
             self._model, "ticks_labels"
         ):
@@ -436,18 +479,13 @@ class EuphonicStructureFactorWidget(ipw.VBox):
         elif hasattr(self._model, "xlabel"):
             self.fig.update_layout(xaxis_title=self._model.xlabel)
 
+        # Generate the plot object, in this case a heatmap
         heatmap_trace = go.Heatmap(
             z=self._model.z,
             y=self._model.y,
             x=self._model.x,
-            # colorbar=COLORBAR_DICT,
             colorscale=COLORSCALE,
         )
-        # Add colorbar
-        # Do we need it?
-        # colorbar = heatmap_trace.colorbar
-        # colorbar.x = 1.05  # Move colorbar to the right
-        # colorbar.y = 0.5  # Center colorbar vertically
 
         # Add heatmap trace to figure
         self.fig.add_trace(heatmap_trace)
@@ -460,7 +498,8 @@ class EuphonicStructureFactorWidget(ipw.VBox):
 
     def _update_intensity_filter(self, change=None):
         # the value of the intensity slider is in fractions of the max.
-        # NOTE: we do this here, as we do not want to replot.
+        # NOTE: we do this here, as we do not want to replot. Reason is that
+        # the data will not change! so we don't need to invoke the model.
         self.fig.data[0].zmax = (
             self._model.intensity_filter[1] * np.max(self.fig.data[0].z) / 100
         )  # above this, it is all yellow, i.e. max intensity.
@@ -469,15 +508,27 @@ class EuphonicStructureFactorWidget(ipw.VBox):
         )  # below this, it is all blue, i.e. zero intensity
 
     def _update_energy_units(self, change):
-        # the value of the intensity slider is in fractions of the max.
-        self._model._update_energy_units(
-            new=change["new"],
-            old=change["old"],
-        )
-        # Update x-axis and y-axis to enable autoscaling
+        """Updating the energy units
 
-        self.fig.data[0].y = self._model.y
-        self.fig.update_layout(yaxis_title=self._model.ylabel)
+        we need to update both the plot and the energy broadening widget.
+        Also, we need to avoid to enable the plot button if it was already disabled:
+        we are not changing anything apart the units.
+        """
+        replot_was_off = self.plot_button.disabled
+
+        with self.hold_trait_notifications():
+            self._model._update_energy_units(
+                old_units=change["old"], new_units=change["new"]
+            )
+
+            self.fig.data[0].y = self._model.y
+            self.fig.update_layout(yaxis_title=self._model.ylabel)
+            self.energy_broadening.description = (
+                f"&Delta;E ({self._model.energy_units})"
+            )
+
+            # putting off again the replot if it was off.
+            self.plot_button.disabled = replot_was_off
 
     def _reset_settings(self, _):
         self._model.reset()
@@ -489,3 +540,6 @@ class EuphonicStructureFactorWidget(ipw.VBox):
         self._model.Q0_vec = [i.value for i in self.Q0_vec.children[:-2]]
         self._model.h_vec = [i.value for i in self.h_vec.children]
         self._model.k_vec = [i.value for i in self.k_vec.children]
+
+    def display_info_legend(self, change):
+        self.info_legend_infobox.layout.display = "block" if change["new"] else "none"
