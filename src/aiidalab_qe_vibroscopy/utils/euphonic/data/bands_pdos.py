@@ -3,7 +3,6 @@ import numpy as np
 import euphonic as eu
 import euphonic.util as util
 
-from aiidalab_qe.common.bandpdoswidget import cmap
 
 import json
 from monty.json import jsanitize
@@ -102,8 +101,6 @@ def compute_pdos(
             "label": atom["label"],
             "x": total_dos.x_data.magnitude.tolist(),
             "y": species_pdos.y_data.magnitude[t].tolist(),
-            "borderColor": cmap(atom["label"]),
-            "backgroundColor": cmap(atom["label"]),
             "backgroundAlpha": "40%",
             "lineStyle": "solid",
         }
@@ -124,7 +121,7 @@ def compute_pdos(
     return [data_dict, parameters]  # output_data.
 
 
-def compute_bands(fc):
+def compute_bands(fc, dipole=True, asr="reciprocal"):
     """Function to calculate square of a number.
 
     Args:
@@ -140,7 +137,7 @@ def compute_bands(fc):
     cell = fc.crystal.to_spglib_cell()
     qpts = seekpath.get_explicit_k_path(cell)["explicit_kpoints_rel"]
 
-    phonons = fc.calculate_qpoint_phonon_modes(qpts, asr="reciprocal")
+    phonons = fc.calculate_qpoint_phonon_modes(qpts, asr=asr, dipole=dipole)
     disp = phonons.get_dispersion()
     # end Euphonic
 

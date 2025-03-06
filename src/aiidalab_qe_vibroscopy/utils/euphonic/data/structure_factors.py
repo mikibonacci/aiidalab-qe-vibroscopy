@@ -252,6 +252,7 @@ def produce_bands_weigthed_data(
             modes = fc.calculate_qpoint_phonon_modes(
                 qpts,
                 reduce_qpts=False,
+                **calc_modes_kwargs,
             )
 
         else:
@@ -405,7 +406,8 @@ def produce_powder_data(
     # Use X-point modes to estimate frequency range, set up energy bins
     # (Not Gamma in case there are only 3 branches; value would be zero!)
     modes = fc.calculate_qpoint_frequencies(
-        np.array([[0.0, 0.0, 0.5]]), **calc_modes_kwargs
+        np.array([[0.0, 0.0, 0.5]]),
+        **calc_modes_kwargs,
     )
     modes.frequencies_unit = args.energy_unit
 
@@ -616,7 +618,11 @@ def produce_Q_section_modes(
         h, k, Q0, n_h + 1, n_k + 1, h_extension, k_extension
     )
 
-    modes = fc.calculate_qpoint_phonon_modes(qpts=q_array, reduce_qpts=False)
+    modes = fc.calculate_qpoint_phonon_modes(
+        qpts=q_array,
+        reduce_qpts=False,
+        asr="reciprocal",
+    )
 
     if temperature > 0:
         blockPrint()

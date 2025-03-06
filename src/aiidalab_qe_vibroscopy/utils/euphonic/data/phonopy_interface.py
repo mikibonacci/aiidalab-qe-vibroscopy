@@ -11,6 +11,27 @@ from aiidalab_qe_vibroscopy.utils.euphonic.data.structure_factors import (
 )
 
 
+def generate_force_constant_instance_temporary_fix(
+    path, summary_name="phonopy.yaml", fc_name="fc.hdf5"
+):
+    """temporary utility function for avoid to re-apply the NAC corrections in the .
+
+    Args:
+        path (_type_, optional): _description_. Defaults to dirpath.
+        summary_name (str, optional): _description_. Defaults to "phonopy.yaml".
+        fc_name (str, optional): _description_. Defaults to "fc.hdf5".
+    """
+    data = euphonic.readers.phonopy.read_interpolation_data(
+        path=path, summary_name=summary_name, fc_name=fc_name
+    )
+    fc = euphonic.ForceConstants.from_dict(data)
+    # if fc.born is not None:
+    #     fc = cls.from_total_fc_with_dipole(
+    #         fc.crystal, fc.force_constants, fc.sc_matrix, fc.cell_origins,
+    #         born=fc.born, dielectric=fc.dielectric)
+    return fc
+
+
 def generate_force_constant_from_phonopy(
     phonopy_calc=None,
     path: str = None,
@@ -113,7 +134,8 @@ def generate_force_constant_from_phonopy(
 
         # Read force constants (fc.hdf5) and summary+NAC (phonopy.yaml)
 
-        fc = euphonic.ForceConstants.from_phonopy(
+        # fc = euphonic.ForceConstants.from_phonopy(
+        fc = generate_force_constant_instance_temporary_fix(
             path=dirpath,
             summary_name="phonopy.yaml",
             fc_name="fc.hdf5",

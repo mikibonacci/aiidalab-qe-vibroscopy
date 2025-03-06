@@ -17,7 +17,7 @@ common_parameters = {
     "energy_broadening": 1,
     "q_broadening": None,  # FWHM of broadening on q axis in 1/LENGTH_UNIT (no broadening if unspecified). (default: None)
     "ebins": 200,  # Number of energy bins (default: 200)
-    "e_min": 0,
+    "e_min": None,
     "e_max": None,
     "title": None,
     "ylabel": "meV",
@@ -28,7 +28,7 @@ common_parameters = {
     "vmin": None,
     "vmax": None,
     "save_to": None,
-    "asr": None,  # Apply an acoustic-sum-rule (ASR) correction to the data: "realspace" applies the correction to the force constant matrix in real space. "reciprocal" applies the correction to the dynamical matrix at each q-point. (default: None)
+    "asr": "reciprocal",  # Apply an acoustic-sum-rule (ASR) correction to the data: "realspace" applies the correction to the force constant matrix in real space. "reciprocal" applies the correction to the dynamical matrix at each q-point. (default: None)
     "dipole_parameter": 1.0,  # Set the cutoff in real/reciprocal space for the dipole Ewald sum; higher values use more reciprocal terms. If tuned correctly this can result in performance improvements. See euphonic-optimise-dipole-parameter program for help on choosing a good DIPOLE_PARAMETER. (default: 1.0)
     "use_c": True,
     "n_threads": 1,
