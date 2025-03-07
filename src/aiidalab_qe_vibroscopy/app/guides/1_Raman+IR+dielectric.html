@@ -1,15 +1,15 @@
 <div id="guide-header">
   You've activated the Raman+IR in-app guide. In this guide, you will learn how to
-  use the app to compute the Raman/IR spectra and dielectric properties (Dielectric and Raman tensor, Born effective charges) of Silicon (Si). <br>
+  use the app to compute the Raman/IR spectra and dielectric properties (Dielectric and Raman
+  tensor, Born effective charges) of Silicon (Si). <br>
+  <div class="alert alert-warning">
+    <b>Pre-requisite:</b> This guide assumes that you already followed the general &rarr; basic guide, or that you are already familiar with the app.
+  </div>
   Click on <b>Step 1: Select structure</b> and follow the instructions to proceed.
 </div>
 
 <div id="structure-step">
   In the structure selection step, we select the Si structure from the examples. <br>
-  Once selected, we can view the structure in the viewer below. We can also edit
-  the structure using the available structure editors. When done, we can choose
-  to modify the structure label and/or provide a description. These will be
-  attached to the input structure node in your AiiDA database.
   <div class="alert alert-success">
     <h4>Tasks</h4>
   <ul>
@@ -29,12 +29,12 @@
 </div>
 
 <div id="configuration-step">
-  In the configuration step, we define the parameters needed to perform our phonon calculation.
+  In the configuration step, we define the parameters needed to perform the calculations.
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
-      <li>Select <b>Structure as is</b></li>
-      <li>Open <b>step 2.1</b> for further instructions</li>
+      <li>Select <b>Full geometry</b>, i.e. we relaxed the structure optimizing both cell parameters and atom positions</li>
+      <li>Open <b>Step 2.1</b> for further instructions</li>
     </ol>
   </div>
 </div>
@@ -46,7 +46,7 @@
     <h4>Tasks</h4>
     <ol>
       <li>Tick the <b>Vibrational Spectroscopy (VIBRO)</b> checkbox</li>
-      <li>Open <b>step 2.2</b> for further instructions</li>
+      <li>Open <b>Step 2.2</b> for further instructions</li>
     </ol>
   </div>
 </div>
@@ -63,8 +63,22 @@
     </li>
   </ul>
   Note that the app pre-configures defaults for most parameters.
+  </div>
+</div>
+
+<div id="basic-settings">
+  Here we define the basic settings of the simulations.
   <div class="alert alert-success">
-        See further instructions in the <b>Vibrational settings</b> panel below.
+    <h4>Tasks</h4>
+      <ol>
+        <li>Select <b>Insulator</b> Electronic type</li>
+        <li>Select <b>Fast</b> protocol</li>
+        <li>See further instructions in the <b>Vibrational settings</b> panel</li>
+      </ol>
+  </div>
+  <div class="alert alert-warning">
+    <b>Note:</b> For the purpose of completing this guide in short time, we will use the <b>Fast</b> protocol for default parameters.
+    However, you if dispose of enough computational resources, you can also select Moderate or Precise.
   </div>
 </div>
 
@@ -73,7 +87,8 @@
   <div class="alert alert-success">
     <h4>Tasks</h4>
       <ul>
-        <li>Select <b>IR/Raman and Dielectric in Primitive Cell Approach</b> in the dropdown menu. We don't to set the supercell, as the calculations will be done in the unit cell.</li>
+        <li>Select <b>IR/Raman and Dielectric in Primitive Cell Approach</b> in the dropdown menu.
+          We are only computing phonons at &Gamma;, so we do not need any supercell.</li>
         <li>Click the <b>Confirm</b> button to proceed</li>
       </ul>
     <div class="alert alert-warning">
@@ -114,17 +129,17 @@
   </div>
 </div>
 
-<div id="results-panel">
+<div id="results-step">
   In the results panel, each tab will open results pertaining to a specific
   calculation submitted by the workflow.
   <div class="alert alert-success">
-    See further instructions below in the <b>Muon results</b> tab.
+    See further instructions below in the <b>Vibroscopy</b> results tab.
   </div>
 </div>
 
 <div id="phonons-results">
-  When phonons results are available, the <b>Load results</b> button will become active allowing us to
-  load the results from AiiDA.
+  When Raman/IR and dielectric results are available, the <b>Load results</b> button will become active in the corresponding tabs,
+  allowing us to load the results from AiiDA.
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
@@ -143,16 +158,20 @@
 </div>
 
 <div id="Raman-spectrum-results">
-  Below, there are the Raman/IR spectra.
+  Below, there are the Raman/IR results.
+  <div class="alert alert-warning">
+    <b>Note:</b> no active IR modes are detected, as follows from selection rules.
+  </div>
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
       <li>
-        Inspect the PowderRaman spectrum.
+        Inspect the Powder Raman spectrum.
       </li>
       <li>
         Change the <b>Broadening</b> to 50 cm<sup>-1</sup> and click on the <b>Update plot</b> button.
       </li>
+      <li>Inspect the animation of the Raman active modes. Do different modes show different displacement?</li>
       <li>Go back to the <b>Dielectric properties</b> tab.</li>
     </ol>
   </div>
@@ -167,7 +186,7 @@
         Inspect the three quantities represented in the tables: Dielectric, Raman tensors and Born effective charges.
       </li>
       <li>
-        Change selected atom site to correspond to the second Si atom.
+        Use the <b>Select atom site</b> dropwdown to inspect the second Si atom.
       </li>
     </ol>
   </div>
@@ -177,27 +196,8 @@
   <h4>Post-guide exercises</h4>
   <ol>
     <li>
-      Download the data on muon stopping sites:
-      <ul>
-        <li>
-          Click the "Download data" button just below the table in inspect the contained files;
-          try to visualize the cif files with your favorite visualization software (e.g., <a
-              href="https://jp-minerals.org/vesta/en/"
-              target="_blank"
-            >
-              VESTA</a
-            >).
-          </li>
-      </ul>
-    </li>
-    <li>
-      Download the polarization data for the muon stopping site B and plot it with a software of your choice,
-      to verify that indeed it is the same you see in this app.
-    </li>
-    <li>
-      Run the same calculation for muon search site but include also a second grid of field for the polarization, adding
-      two additional fields: 50 and 100 mT. You will have to play with the B step carefully (and check the B fields list).
-      You can also make a coarser grid for the 0 - 8 mT range (e.g. imposing a B step of 4 mT).
+      Use the app to compute the Raman/IR spectra and dielectric properties of GaAs (Gallium Arsenide) and compare the
+      results with the ones obtained for Silicon.
     </li>
   </ol>
 </div>

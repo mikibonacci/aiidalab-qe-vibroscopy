@@ -111,7 +111,11 @@ class EuphonicResultsModel(Model):
         # Hold the trait firing when resetting the model.
         with self.hold_trait_notifications():
             for trait in self.traits():
-                if trait not in ["intensity_filter", "energy_units"]:
+                if trait not in [
+                    "intensity_filter",
+                    "energy_units",
+                    "info_legend_text",
+                ]:
                     setattr(self, trait, self._get_default(trait))
 
     def fetch_data(self):

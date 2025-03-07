@@ -93,9 +93,7 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
         trait=tl.Int(),
         default_value=[2, 2, 2],
     )
-    supercell_number_estimator = tl.Unicode(
-        "Click the button to estimate the supercell size."
-    )
+    supercell_number_estimator = tl.Unicode("Click to estimate")
 
     def get_model_state(self):
         return {
@@ -165,6 +163,10 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
             # Sync the updated values to the supercell list
             self.supercell = [self.supercell_x, self.supercell_y, self.supercell_z]
 
+            self.supercell_number_estimator = self._get_default(
+                "supercell_number_estimator"
+            )
+
         else:
             return
 
@@ -176,6 +178,9 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
         if not self.disable_z:
             self.supercell_z = self._get_default("supercell_x")
         self.supercell = [self.supercell_x, self.supercell_y, self.supercell_z]
+        self.supercell_number_estimator = self._get_default(
+            "supercell_number_estimator"
+        )
 
     def reset_symprec(self, _=None):
         self.symmetry_symprec = (

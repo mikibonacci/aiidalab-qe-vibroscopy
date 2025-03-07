@@ -1,15 +1,16 @@
 <div id="guide-header">
-  You've activated the phonon in-app guide. In this guide, you will learn how to
-  use the app to compute the phonons of bulk Silicon (Si). <br>
+  You've activated the phonon in-app guide. <br>
+  In this guide, you will learn how to
+  use the app to compute the <b>phonons</b> of bulk Silicon (Si). As post-processing, you will also
+  compute the inelastic neutron scattering dynamical <b>structure factor S(Q, ω)</b>. <br>
+  <div class="alert alert-warning">
+    <b>Pre-requisite:</b> This guide assumes that you already followed the general &rarr; basic guide, or that you are already familiar with the app.
+  </div>
   Click on <b>Step 1: Select structure</b> and follow the instructions to proceed.
 </div>
 
 <div id="structure-step">
   In the structure selection step, we select the Si structure from the examples. <br>
-  Once selected, we can view the structure in the viewer below. We can also edit
-  the structure using the available structure editors. When done, we can choose
-  to modify the structure label and/or provide a description. These will be
-  attached to the input structure node in your AiiDA database.
   <div class="alert alert-success">
     <h4>Tasks</h4>
   <ul>
@@ -29,12 +30,13 @@
 </div>
 
 <div id="configuration-step">
-  In the configuration step, we define the parameters needed to perform our phonon calculation.
+  In the Configure workflow (Step 2), we define the parameters needed to perform our phonon
+  dispersion calculation.
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
       <li>Select <b>Full geometry</b>, i.e. we relaxed the structure optimizing both cell parameters and atom positions</li>
-      <li>Open <b>step 2.1</b> for further instructions</li>
+      <li>Open <b>Step 2.1</b> for further instructions</li>
     </ol>
   </div>
 </div>
@@ -45,8 +47,8 @@
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
-      <li>Tick the <b>Vibrational Spectroscopy (VIBRO)</b> checkbox</li>
-      <li>Open <b>step 2.2</b> for further instructions</li>
+      <li>Select the <b>Vibrational Spectroscopy (VIBRO)</b> checkbox</li>
+      <li>Go to <b>Step 2.2</b> for further instructions</li>
     </ol>
   </div>
 </div>
@@ -63,12 +65,22 @@
     </li>
   </ul>
   Note that the app pre-configures defaults for most parameters.
+  </div>
+</div>
+
+<div id="basic-settings">
+  Here we define the basic settings of the simulations.
   <div class="alert alert-success">
     <h4>Tasks</h4>
       <ol>
+        <li>Select <b>Insulator</b> Electronic type</li>
         <li>Select <b>Fast</b> protocol</li>
-        <li>See further instructions in the <b>Vibrational settings</b> panel below</li>
+        <li>See further instructions in the <b>Vibrational settings</b> panel</li>
       </ol>
+  </div>
+  <div class="alert alert-warning">
+    <b>Note:</b> For the purpose of completing this guide in short time, we will use the <b>Fast</b> protocol for default parameters.
+    However, you if dispose of enough computational resources, you can also select Moderate or Precise.
   </div>
 </div>
 
@@ -78,7 +90,8 @@
     <h4>Tasks</h4>
       <ul>
         <li>Select <b>Phonons for non-polar materials and INS</b> in the dropdown menu.</li>
-        <li>Estimate the <b>number of supercells</b> to see the number of supercells needed to computed finite displacement forces. The output number should be equal to 1.</li>
+        <li><b>Estimate the number of supercells</b>  to see the number of supercells needed to computed finite displacement forces.
+          The number different configurations, in this case, should be equal to 1 (thanks to symmetry arguments). </li>
         <li>Click the <b>Confirm</b> button to proceed</li>
       </ul>
     <div class="alert alert-warning">
@@ -119,11 +132,11 @@
   </div>
 </div>
 
-<div id="results-panel">
+<div id="results-step">
   In the results panel, each tab will open results pertaining to a specific
   calculation submitted by the workflow.
   <div class="alert alert-success">
-    See further instructions below in the <b>Muon results</b> tab.
+    See further instructions below in the <b>Vibroscopy</b> results tab.
   </div>
 </div>
 
@@ -153,10 +166,10 @@
     <h4>Tasks</h4>
     <ol>
       <li>
-        Check the spectrum and verify that there is a double degenerate mode at 12.08 THz for <b>q</b>=X.
+        Check the spectrum and verify that there is a degenerate mode around 12.10 THz for <b>q</b>=X.
       </li>
       <li>
-        Verify that the computed specific heat (constant volume) is 39.3 J/(mol K) at 300 K.
+        Verify that the computed specific heat (constant volume) at 300 K is more or less 39.70 J/(mol K).
       </li>
       <li>Go to the <b>Neutron scattering</b> tab.</li>
     </ol>
@@ -164,7 +177,7 @@
 </div>
 
 <div id="ins-results">
-  Here we can perform a calculation of the inelastic neutron scattering (INS) spectrum.
+  Here we obtain the dynamical structure factor (from inelastic neutron scattering INS) spectrum S(Q, ω).
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
@@ -178,6 +191,9 @@
         Decrease the <b>q step</b> to be 0.01 Å<sup>-1</sup>.
       </li>
       <li>
+        Increase the number of energy bins <b>#E bins</b> to be 1000.
+      </li>
+      <li>
         Click on the <b>Replot</b> to perform again the calculation.
       </li>
       <li>
@@ -188,4 +204,30 @@
       </li>
     </ol>
   </div>
+</div>
+
+<div id="post-guide">
+  <h4>Post-guide exercises</h4>
+  <ol>
+    <li>
+      In the Neutron scattering results tab, switch to <b>Powder sample</b> and try to perform similar analysis as done for the Single crystal.
+      <ul>
+        <li>
+          Verify that a signal is still present at the same frequency as the degenerate mode detected before.
+        </li>
+        <li>
+          Enhance the low intensity signal by using the <b>Intensity window (%)</b> slider.
+        </li>
+      </ul>
+    </li>
+    <li>
+      Use the app to compute the phonon band structure of GaAs (Gallium Arsenide) and compare the results with the ones obtained for Silicon.
+      <div class="alert alert-warning">
+        <b>Note:</b> Even if GaAs LO-TO splitting requires non-analytical corrections (NAC) to the force constants, for this example we will not compute them (i.e., the simulations type
+        selected in Step 2.2 will be the same as this example: <b>Phonons for non-polar materials and INS</b>).
+        This means that the phonon spectrum will <b>not</b> show the LO-TO splitting.
+        NAC will be computed and applied in a more advanced guide (see vibronic &rarr; phonons+Raman+IR+dielectric+neutrons).
+      </div>
+    </li>
+  </ol>
 </div>

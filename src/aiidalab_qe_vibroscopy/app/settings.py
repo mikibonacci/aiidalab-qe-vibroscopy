@@ -12,6 +12,8 @@ import ipywidgets as ipw
 from aiidalab_qe.common.panel import ConfigurationSettingsPanel
 from aiidalab_qe_vibroscopy.app.model import VibroConfigurationSettingsModel
 
+from aiidalab_qe_vibroscopy.app.widgets.utils_widgets import SettingsInfoBoxWidget
+
 from aiidalab_qe.common.infobox import InAppGuide
 
 from aiida.plugins import DataFactory
@@ -60,13 +62,9 @@ class VibroConfigurationSettingPanel(
             layout=ipw.Layout(width="400"),
         )
 
-        self.use_title = ipw.HTML(
-            """<div style="padding-top: 0px; padding-bottom: 0px">
-            <h5>Available simulations:</h5></div>"""
-        )
-
-        self.use_help = ipw.HTML(
-            """<div style="line-height: 140%; padding-top: 0px; padding-bottom: 5px">
+        self.infobox_simulations = SettingsInfoBoxWidget(
+            info="""<div style="line-height: 140%; padding-top: 0px; padding-bottom: 5px">
+            &#8613; <h5>Available properties:</h5></div>
             <ul>
                 <li> <em>IR/Raman spectra</em>: both single crystal and powder samples.</li>
                 <li> <em>Phonons properties</em>: bands, density
@@ -76,12 +74,17 @@ class VibroConfigurationSettingPanel(
                 <li> <em>Inelastic neutron scattering (INS)</em>: dynamic structure factor and powder intensity maps.</li>
             </ul>
             </div>""",
-            layout=ipw.Layout(width="400"),
         )
 
         self.hint_button_help = ipw.HTML(
             """<div style="line-height: 140%; padding-top: 0px; padding-bottom: 5px">
-            Select a supercell size for Phonon properties:
+            <h5><b>Supercell for phonon properties:</b></h5>
+             </div>"""
+        )
+
+        self.infobox_supercells = SettingsInfoBoxWidget(
+            info="""
+            &#8613; The supercell is used to calculate the force constants as obtained from finite atomic displacements.
             <ul>
                 <li>Larger supercells increase computational costs.</li>
                 <li>A 2x2x2 supercell is usually adequate.</li>
@@ -110,7 +113,7 @@ class VibroConfigurationSettingPanel(
             max=1,
             min=1e-7,
             step=1e-4,
-            description="Symmetry tolerance (symprec):",
+            description="<b>Symmetry tolerance:</b>",
             style={"description_width": "initial"},
             layout={"width": "300px"},
         )
@@ -158,12 +161,6 @@ class VibroConfigurationSettingPanel(
 
         self.supercell_selector = ipw.HBox(
             children=[
-                ipw.HTML(
-                    description="Supercell size:",
-                    style={"description_width": "initial"},
-                )
-            ]
-            + [
                 self.supercell_x,
                 self.supercell_y,
                 self.supercell_z,
@@ -228,9 +225,10 @@ class VibroConfigurationSettingPanel(
 
         self.supercell_widget = ipw.VBox(
             [
-                self.hint_button_help,
                 ipw.HBox(
                     [
+                        self.hint_button_help,
+                        self.infobox_supercells,
                         self.supercell_selector,
                         self.supercell_hint_button,
                         self.supercell_reset_button,
@@ -238,6 +236,7 @@ class VibroConfigurationSettingPanel(
                         self.supercell_number_estimator,
                     ],
                 ),
+                self.infobox_supercells.infobox,
             ]
         )
         self.supercell_widget.layout.display = "block"
@@ -257,20 +256,16 @@ class VibroConfigurationSettingPanel(
                             self.settings_help,
                         ]
                     ),
-                    ipw.VBox(
-                        [
-                            self.use_title,
-                            self.use_help,
-                        ]
-                    ),
                 ]
             ),
             ipw.HBox(
                 [
-                    ipw.HTML("Select calculation:"),
+                    ipw.HTML("<b>Simulation:</b>"),
                     self.simulation_type,
+                    self.infobox_simulations,
                 ],
             ),
+            self.infobox_simulations.infobox,
             self.supercell_widget,
             ipw.HBox(
                 [
@@ -302,4 +297,8 @@ class VibroConfigurationSettingPanel(
             if self._model.simulation_type in [1, 3]
             and len(self._model.input_structure.sites) <= 30
             else "none"
+        )
+
+        self._model.supercell_number_estimator = self._model._get_default(
+            "supercell_number_estimator"
         )

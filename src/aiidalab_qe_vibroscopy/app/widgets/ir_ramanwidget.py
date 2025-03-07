@@ -21,7 +21,7 @@ class IRRamanWidget(ipw.VBox):
         if self.rendered:
             return
 
-        self.children = [InAppGuide(identifier="dielectric-results")]
+        self.children = [InAppGuide(identifier="Raman-spectrum-results")]
 
         self.rendered = True
         self._model.fetch_data()
