@@ -61,7 +61,7 @@ def disable_print(func):
 
 
 class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStructure):
-    title = "Vibrational Settings"
+    title = "Vibrational settings"
 
     dependencies = [
         "input_structure",

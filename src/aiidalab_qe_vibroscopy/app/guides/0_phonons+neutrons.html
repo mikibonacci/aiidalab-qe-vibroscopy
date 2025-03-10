@@ -35,7 +35,7 @@
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
-      <li>Select <b>Full geometry</b>, i.e. we relaxed the structure optimizing both cell parameters and atomic positions</li>
+      <li>Select <b>Full geometry</b>, i.e. we optimize both cell parameters and atomic positions</li>
       <li>Open <b>Step 2.1</b> for further instructions</li>
     </ol>
   </div>
@@ -90,10 +90,14 @@
     <h4>Tasks</h4>
       <ul>
         <li>Select <b>Phonons for non-polar materials and INS</b> in the dropdown menu.</li>
-        <li><b>Estimate the number of supercells</b>  to see the number of supercells needed to computed finite displacement forces.
-          The number different configurations, in this case, should be equal to 1 (thanks to symmetry arguments). </li>
+        <li>Set the <b>Supercell size</b> to be [2,2,2], if not already set.</li>
+        <li>Estimate the <b>number of supercells</b> to see the number of supercells needed to computed finite displacement forces.
+          The output number should be equal to 1, thanks to symmetry between different displacements.</li>
         <li>Click the <b>Confirm</b> button to proceed</li>
       </ul>
+    <div class="alert alert-warning">
+      <b>Note:</b> a [1,1,1] supercell (i.e., unit cell) is not accurate to correctly reproduce phonons dispersion, but is fine for phonons at &Gamma;. Usually, at least a [2,2,2] supercell is needed.
+    </div>
     <div class="alert alert-warning">
       <b>Warning:</b> Changes after confirmation will reset the following steps.
     </div>
@@ -142,7 +146,7 @@
 </div>
 
 <div id="phonons-results">
-  When phonons results are available, the <b>Load results</b> button will become active allowing us to
+  When phonons results are available, the <b>Load results</b> button will become active, allowing us to
   load the results from AiiDA.
   <div class="alert alert-success">
     <h4>Tasks</h4>
@@ -151,7 +155,7 @@
         Click on the <b>Phonons</b> tab to visualize the phonon spectrum and thermodynamic properties.
       </li>
       <li>
-        Click on the <b>Neutron scattering</b> tab to start and inelastic neutron scattering analysis.
+        After having inspected the Phonons tab, click on the <b>Neutron scattering</b> tab to start and inelastic neutron scattering analysis.
       </li>
     </ol>
   </div>
@@ -163,10 +167,10 @@
     <h4>Tasks</h4>
     <ol>
       <li>
-        Check the spectrum and verify that there is a degenerate mode around 12.10 THz for <b>q</b>=X.
+        Check the spectrum and verify that there is a degenerate mode around 12.11 THz for <b>q</b>=X.
       </li>
       <li>
-        Verify that the computed specific heat (constant volume) at 300 K is more or less 39.70 J/(mol K).
+        Verify that the computed specific heat (constant volume) at 300 K is more or less 39.73 J/(mol K).
       </li>
       <li>Go to the <b>Neutron scattering</b> tab.</li>
     </ol>
@@ -219,6 +223,7 @@
     </li>
     <li>
       Use the app to compute the phonon band structure of SiO2 (Silicon Oxide) and compare the results with the ones obtained for Silicon.
+      In the Vibrational settings, select the same simulation type as used in this example.
     </li>
   </ol>
 </div>
