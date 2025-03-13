@@ -97,7 +97,7 @@ class RamanWidget(ipw.VBox):
             layout=ipw.Layout(width="auto"),
         )
         self.use_nac_direction = ipw.Checkbox(
-            description="Use non-analytical direction",
+            description="Use non-analytical direction(NAC)",
             style={"description_width": "initial"},
         )
         ipw.link(
@@ -105,8 +105,13 @@ class RamanWidget(ipw.VBox):
             (self.use_nac_direction, "value"),
         )
         self.use_nac_direction.observe(self._on_nac_direction_change, names="value")
+        self.help_nac_direction = ipw.HTML(
+            value="""<div style="line-height: 140%; padding-top: 10px; padding-bottom: 10px">
+                The NAC direction should match the light propagation direction, which is perpendicular to the polarization direction, and it should be defined in Cartesian coordinates.
+                </div>"""
+        )
         self.nac_direction = ipw.Text(
-            description="NAC direction (Cartesian coord.):",
+            description="NAC direction:",
             style={"description_width": "initial"},
         )
         ipw.link(
@@ -229,6 +234,7 @@ class RamanWidget(ipw.VBox):
             self.broadening,
             self.separate_polarizations,
             self.use_nac_direction,
+            self.help_nac_direction,
             self.nac_direction,
             self.pol_incoming,
             self.pol_outgoing,
@@ -270,6 +276,8 @@ class RamanWidget(ipw.VBox):
             self.separate_polarizations.layout.display = "none"
 
         self.nac_direction.layout.display = "none"
+        self.help_nac_direction.layout.display = "none"
+
         self.spectrum.add_scatter(
             x=self._model.frequencies, y=self._model.intensities, name=""
         )
@@ -291,8 +299,10 @@ class RamanWidget(ipw.VBox):
     def _on_nac_direction_change(self, change):
         if change["new"]:
             self.nac_direction.layout.display = "block"
+            self.help_nac_direction.layout.display = "block"
         else:
             self.nac_direction.layout.display = "none"
+            self.help_nac_direction.layout.display = "none"
 
     def _on_plot_type_change(self, change):
         if change["new"] == "single_crystal":
