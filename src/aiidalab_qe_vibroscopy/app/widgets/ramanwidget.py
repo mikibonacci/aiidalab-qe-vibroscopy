@@ -97,7 +97,7 @@ class RamanWidget(ipw.VBox):
             layout=ipw.Layout(width="auto"),
         )
         self.use_nac_direction = ipw.Checkbox(
-            description="Use NAC direction",
+            description="Use non-analytical direction",
             style={"description_width": "initial"},
         )
         ipw.link(
