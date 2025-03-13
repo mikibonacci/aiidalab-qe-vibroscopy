@@ -49,6 +49,9 @@ class RamanModel(Model):
     supercell_1 = tl.Int(1)
     supercell_2 = tl.Int(1)
 
+    use_nac_direction = tl.Bool(False)
+    nac_direction = tl.Unicode("0 0 1")
+
     def fetch_data(self):
         """Fetch the Raman data from the VibroWorkChain"""
         self.raman_data = self.get_vibrational_data(self.vibro)
@@ -84,6 +87,7 @@ class RamanModel(Model):
         """
         Update data for the powder plot, handling both Raman and IR spectra.
         """
+        dir_nac_direction, _ = self._check_inputs_correct(self.nac_direction)
         if self.spectrum_type == "Raman":
             (
                 polarized_intensities,
@@ -93,6 +97,7 @@ class RamanModel(Model):
             ) = self.raman_data.run_powder_raman_intensities(
                 frequencies=self.frequency_laser,
                 temperature=self.temperature,
+                nac_direction=dir_nac_direction if self.use_nac_direction else None,
             )
 
             if self.separate_polarizations:
@@ -122,7 +127,9 @@ class RamanModel(Model):
                 intensities,
                 frequencies,
                 _,
-            ) = self.raman_data.run_powder_ir_intensities()
+            ) = self.raman_data.run_powder_ir_intensities(
+                nac_direction=dir_nac_direction if self.use_nac_direction else None,
+            )
             self.frequencies, self.intensities = self.generate_plot_data(
                 frequencies,
                 intensities,
@@ -135,6 +142,7 @@ class RamanModel(Model):
         Update data for the single crystal plot, handling both Raman and IR spectra.
         """
         dir_incoming, _ = self._check_inputs_correct(self.pol_incoming)
+        dir_nac_direction, _ = self._check_inputs_correct(self.nac_direction)
 
         if self.spectrum_type == "Raman":
             dir_outgoing, _ = self._check_inputs_correct(self.pol_outgoing)
@@ -147,6 +155,7 @@ class RamanModel(Model):
                 pol_outgoing=dir_outgoing,
                 frequencies=self.frequency_laser,
                 temperature=self.temperature,
+                nac_direction=dir_nac_direction if self.use_nac_direction else None,
             )
         elif self.spectrum_type == "IR":
             (
@@ -154,7 +163,8 @@ class RamanModel(Model):
                 frequencies,
                 _,
             ) = self.raman_data.run_single_crystal_ir_intensities(
-                pol_incoming=dir_incoming
+                pol_incoming=dir_incoming,
+                nac_direction=dir_nac_direction if self.use_nac_direction else None,
             )
 
         self.frequencies, self.intensities = self.generate_plot_data(
@@ -230,10 +240,10 @@ class RamanModel(Model):
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
             plot.data[1].x = []
             plot.data[1].y = []
-            plot.layout.title.text = f"Powder{self.spectrum_type} Spectrum"
+            plot.layout.title.text = f"Powder {self.spectrum_type} Spectrum"
         elif len(plot.data) == 1:
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
-            plot.layout.title.text = f"Powder{self.spectrum_type} Spectrum"
+            plot.layout.title.text = f"Powder {self.spectrum_type} Spectrum"
 
     def _update_single_crystal_plot(self, plot):
         """
