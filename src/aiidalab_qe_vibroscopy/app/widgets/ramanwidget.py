@@ -96,6 +96,28 @@ class RamanWidget(ipw.VBox):
             button_style="primary",
             layout=ipw.Layout(width="auto"),
         )
+        self.use_nac_direction = ipw.Checkbox(
+            description="Use non-analytical direction(NAC)",
+            style={"description_width": "initial"},
+        )
+        ipw.link(
+            (self._model, "use_nac_direction"),
+            (self.use_nac_direction, "value"),
+        )
+        self.use_nac_direction.observe(self._on_nac_direction_change, names="value")
+        self.help_nac_direction = ipw.HTML(
+            value="""<div style="line-height: 140%; padding-top: 10px; padding-bottom: 10px">
+                The NAC direction should match the light propagation direction, which is perpendicular to the polarization direction, and it should be defined in Cartesian coordinates.
+                </div>"""
+        )
+        self.nac_direction = ipw.Text(
+            description="NAC direction:",
+            style={"description_width": "initial"},
+        )
+        ipw.link(
+            (self._model, "nac_direction"),
+            (self.nac_direction, "value"),
+        )
         self.plot_button.on_click(self._on_plot_button_click)
         self.download_button = ipw.Button(
             description="Download Data",
@@ -211,8 +233,12 @@ class RamanWidget(ipw.VBox):
             self.frequency_laser,
             self.broadening,
             self.separate_polarizations,
+            self.use_nac_direction,
+            self.help_nac_direction,
+            self.nac_direction,
             self.pol_incoming,
             self.pol_outgoing,
+            self._wrong_syntax,
             ipw.HBox([self.plot_button, self.download_button]),
             self.spectrum,
             ipw.HBox(
@@ -249,6 +275,9 @@ class RamanWidget(ipw.VBox):
             self.pol_outgoing.layout.display == "none"
             self.separate_polarizations.layout.display = "none"
 
+        self.nac_direction.layout.display = "none"
+        self.help_nac_direction.layout.display = "none"
+
         self.spectrum.add_scatter(
             x=self._model.frequencies, y=self._model.intensities, name=""
         )
@@ -266,6 +295,14 @@ class RamanWidget(ipw.VBox):
         with self.modes_table:
             clear_output()
             display(HTML(self._model.modes_table()))
+
+    def _on_nac_direction_change(self, change):
+        if change["new"]:
+            self.nac_direction.layout.display = "block"
+            self.help_nac_direction.layout.display = "block"
+        else:
+            self.nac_direction.layout.display = "none"
+            self.help_nac_direction.layout.display = "none"
 
     def _on_plot_type_change(self, change):
         if change["new"] == "single_crystal":
@@ -287,7 +324,8 @@ class RamanWidget(ipw.VBox):
         _, outgoing_syntax_ok = self._model._check_inputs_correct(
             self.pol_outgoing.value
         )
-        if not (incoming_syntax_ok and outgoing_syntax_ok):
+        _, nac_syntax_ok = self._model._check_inputs_correct(self.nac_direction.value)
+        if not (incoming_syntax_ok and outgoing_syntax_ok and nac_syntax_ok):
             self._wrong_syntax.message = """
                 <div class='alert alert-danger'>
                     ERROR: Invalid syntax for polarization directions.
