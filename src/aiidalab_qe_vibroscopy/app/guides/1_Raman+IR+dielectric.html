@@ -1,21 +1,22 @@
 <div id="guide-header">
   You've activated the Raman+IR in-app guide. <br>
   In this guide, you will learn how to
-  use the app to compute the <b>Raman/IR</b> spectra and <b>dielectric properties</b> (Dielectric and Raman
-  tensor, Born effective charges) of bulk Silicon (Si). <br>
+  use the app to compute the <b>Raman/IR</b> spectra and <b>dielectric properties</b> 
+  (dielectric and Raman tensors, Born effective charges) of bulk silicon (Si). <br>
   <div class="alert alert-warning">
-    <b>Pre-requisite:</b> This guide assumes that you already followed the general &rarr; basic guide, or that you are already familiar with the app.
+    <b>Pre-requisite:</b> This guide assumes that you already followed the 
+    general &rarr; basic guide, or that you are already familiar with the app.
   </div>
   Click on <b>Step 1: Select structure</b> and follow the instructions to proceed.
 </div>
 
 <div id="structure-step">
-  In the structure selection step, we select the Si structure from the examples. <br>
+  In the structure selection step, we select the silicon structure from the examples. <br>
   <div class="alert alert-success">
     <h4>Tasks</h4>
   <ul>
     <li><b>Click</b> on the "From examples" tab</li>
-    <li><b>Select</b> the Silicon structure in the dropdown menu</li>
+    <li><b>Select</b> the bulk silicon structure in the dropdown menu</li>
     <li>Click the <b>Confirm</b> button to proceed</li>
   </ul>
     <div class="alert alert-warning">
@@ -30,11 +31,14 @@
 </div>
 
 <div id="configuration-step">
-  In the configuration step, we define the parameters needed to perform the calculations.
+  In this second step (Configure workflow), we define the parameters needed to 
+  perform the calculation.
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
-      <li>Select <b>Full geometry</b>, i.e. we optimize both cell parameters and atomic positions</li>
+      <li>Select <b>Full geometry</b>, i.e. we optimize both cell parameters and atomic positions. 
+        This is important when computing phonons, as we are interested in the 
+        curvature of the energy at its minimum (i.e., where forces are zero).</li>
       <li>Open <b>Step 2.1</b> for further instructions</li>
     </ol>
   </div>
@@ -46,15 +50,21 @@
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
-      <li>Tick the <b>Vibrational Spectroscopy (VIBRO)</b> checkbox</li>
+      <li>Tick the <b>Vibrational Spectroscopy (phonons)</b> checkbox</li>
       <li>Open <b>Step 2.2</b> for further instructions</li>
     </ol>
   </div>
 </div>
 
 <div id="calculation-settings">
-  Here we can customize the calculation parameters. The settings are divided
-  into several tabs:
+  Here we can customize the calculation parameters. 
+  The settings are divided into several tabs. 
+  You should have already explored the basic and advanced settings in 
+  earlier in-app guides.
+
+  Here we note that, since we selected the plugin for vibrational spectroscopy, 
+  a new tab is present: **Vibrational settings**. We will explore its content 
+  later.
   <ul>
     <li><b>Basic settings</b>: top-level calculation settings</li>
     <li><b>Advanced settings</b>: fine-tune the calculations</li>
@@ -72,8 +82,8 @@
   <div class="alert alert-success">
     <h4>Tasks</h4>
       <ol>
-        <li>Select <b>Insulator</b> Electronic type</li>
-        <li>Select <b>Fast</b> protocol</li>
+        <li>Since we are simulating silicon, select the <b>Insulator</b> electronic type</li>
+        <li>Select the <b>Fast</b> protocol</li>
         <li>See further instructions in the <b>Vibrational settings</b> panel</li>
       </ol>
   </div>
@@ -89,8 +99,9 @@
     <h4>Tasks</h4>
       <ul>
         <li>Select <b>IR/Raman and Dielectric in Primitive Cell Approach</b> in the dropdown menu.
-          We are only computing phonons at &Gamma;, so we do not need any supercell.</li>
-        <li>Click the <b>Confirm</b> button to proceed</li>
+          We are only computing phonons at &Gamma;, so we do not need any supercell. 
+          Therefore the supercell settings are hidden.</li>
+        <li>Click on the <b>Confirm</b> button to proceed</li>
       </ul>
     <div class="alert alert-warning">
       <b>Warning:</b> Changes after confirmation will reset the following steps.
@@ -115,6 +126,12 @@
     label (pre-filled according to the settings of steps 1 & 2), as well as
     provide a detailed description of the workflow. Once we are ready, we can
     submit the workflow.
+
+    You first need to select which code (code executable + computer where this 
+    will run) to use for each step of the workflow. The Quantum ESPRESSO app 
+    should always install a local Quantum ESPRESSO executable that is sufficient 
+    for this tutorial, but you can setup additional codes installed on remote 
+    supercomputers.
   </p>
   <div class="alert alert-success">
     <h4>Tasks</h4>
@@ -131,11 +148,16 @@
 </div>
 
 <div id="results-step">
+  Below you can monitor the status of the calculation, that might take 
+  several minutes to conclude even if we are using the fast protocol.
+
+  Click on the <b>Results</b> panel.
   In the results panel, each tab will open results pertaining to a specific
   calculation submitted by the workflow.
   <div class="alert alert-success">
     See further instructions below in the <b>Vibroscopy</b> results tab.
-    Once the calculation is complete, click on the <b>Load results</b> button to load the available results.
+    Once the calculation is complete, click on the Load results button 
+    to load the available results.
   </div>
 </div>
 
@@ -169,7 +191,9 @@
       <li>
         Change the <b>Broadening</b> to 50 cm<sup>-1</sup> and click on the <b>Update plot</b> button.
       </li>
-      <li>Inspect the animation of the Raman active modes. Do different modes show different displacement?</li>
+      <li>Inspect the animation of the Raman active modes (feel free to rotate the 3D view and check the animated arrows, indicating the oscillation direction and magnitude). 
+        We suggest to change the amplitude to 4 and to show a 2x2x2 supercell.
+        Do different modes show different displacement?</li>
       <li>Go back to the <b>Dielectric Properties</b> tab.</li>
     </ol>
   </div>
@@ -194,8 +218,8 @@
   <h4>Post-guide exercises</h4>
   <ol>
     <li>
-      Use the app to compute the Raman/IR spectra and dielectric properties of SiO2 (Silicon Oxide) and compare the
-      results with the ones obtained for Silicon.
+      Use the app to compute the Raman/IR spectra and dielectric properties of SiO<sub>2</sub> (silicon oxide) and compare the
+      results with the ones obtained for silicon. Check that, for SiO<sub>2</sub>, also some IR modes are active.
       In the Vibrational settings, select the same simulation type as used in this example.
     </li>
   </ol>
