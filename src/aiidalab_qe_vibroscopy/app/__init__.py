@@ -33,5 +33,8 @@ property = {
         "model": VibroResultsModel,
     },
     "workchain": workchain_and_builder,
-    "guides": Path(__file__).resolve().parent / "guides",
+    "guides": {
+        'title': "Phonons",
+        'path': Path(__file__).resolve().parent / "guides",
+    },
 }

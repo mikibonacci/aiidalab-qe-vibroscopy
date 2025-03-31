@@ -4,9 +4,8 @@
   use the app to compute the <b>phonons</b> of bulk silicon (Si). As post-processing, you will also
   compute the inelastic neutron scattering (<b>INS</b>) <b>dynamical structure factor S(Q, ω)</b>. <br>
   <div class="alert alert-warning">
-    <b>Pre-requisite:</b> This guide assumes that you already followed the *Relaxation 
-    and electronic 
-    structure* &rarr; *Basic tutorial* guide, or that you are already familiar with the app.
+    <b>Pre-requisite:</b> This guide assumes that you already followed the <b>Relaxation and electronic 
+      structure</b> &rarr; <b>Basic tutorial</b> guide, or that you are already familiar with the app.
   </div>
   Click on <b>Step 1: Select structure</b> and follow the instructions to proceed.
 </div>
@@ -17,7 +16,7 @@
     <h4>Tasks</h4>
   <ul>
     <li><b>Click</b> on the "From examples" tab</li>
-    <li><b>Select</b> the bulk silicon structure in the dropdown menu</li>
+    <li>Select <b>Bulk silicon</b> from the dropdown list</li>
     <li>Click the <b>Confirm</b> button to proceed</li>
   </ul>
     <div class="alert alert-warning">
@@ -91,7 +90,7 @@
   </div>
   <div class="alert alert-warning">
     <b>Note:</b> For the purpose of completing this guide in short time, we will use the <b>Fast</b> protocol for default parameters.
-    However, you if dispose of enough computational resources, you can also select Moderate or Precise.
+    However, you if dispose of enough computational resources, you can also select Balanced or Stringent.
   </div>
 </div>
 
@@ -109,7 +108,7 @@
         <li>Click on the <b>Confirm</b> button to proceed</li>
       </ul>
     <div class="alert alert-warning">
-      <b>Note:</b> a [1,1,1] supercell computes phonons only at the Gamma point.
+      <b>Note:</b> a [1,1,1] supercell computes phonons only at the &Gamma; point.
       This is appopriate, e.g., for computing IR and Raman spectra.
       However, it is not sufficient for interpolation in the whole 
       Brillouin zone to correctly reproduce phonons dispersion: at least a 
@@ -144,7 +143,14 @@
     will run) to use for each step of the workflow. The Quantum ESPRESSO app 
     should always install a local Quantum ESPRESSO executable that is sufficient 
     for this tutorial, but you can setup additional codes installed on remote 
-    supercomputers.
+    supercomputers. For more information on how to set up codes, please refer to the 
+    corresponding
+    <a
+      href="https://aiidalab-qe.readthedocs.io/howto/setup_computer_code.html#"
+      target="_blank"
+    >
+      documentation</a
+    >.
   </p>
   <div class="alert alert-success">
     <h4>Tasks</h4>
@@ -169,8 +175,6 @@
   calculation submitted by the workflow.
   <div class="alert alert-success">
     See further instructions below in the <b>Vibroscopy</b> results tab.
-    Once the calculation is complete, click on the Load results button 
-    to load the available results.
   </div>
 </div>
 
@@ -263,7 +267,7 @@
     </li>
     <li>
       Use the app to compute the phonon band structure of SiO<sub>2</sub> (silicon oxide). Compare the results with the ones obtained for silicon. 
-      In the Vibrational settings, select the same simulation type as in this example..
+      In the Vibrational settings, select the same simulation type as in this example.
     </li>
   </ol>
 </div>
