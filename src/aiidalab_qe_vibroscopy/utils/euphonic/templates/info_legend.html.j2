@@ -37,7 +37,7 @@
             {% endif %}
             <li>#E bins: Number of energy bins.</li>
             <li>T: the temperature at which the structure factor is calculated in terms of the Debye-Waller factor. Units are K.</li>
-            <li>Plot mode: the type of plot to be displayed can be the inelastic (one) neutron scattering S(Q, ω) or the Density of States (DOS) map of phonons. In this second case, not finite temperature effects are considered.</li>
+            <li>Plot mode: the type of plot to be displayed can be the inelastic (single) neutron scattering S(Q, ω) or the Density of States (DOS) map of phonons. In this second case, no finite temperature effects are considered.</li>
             {% if spectrum_type == "powder" %}
             <li>|q|min: the minimum value of the q vector magnitude in the plot (in 1/A).</li>
             <li>|q|max: the maximum value of the q vector magnitude in the plot (in 1/A).</li>
@@ -47,7 +47,7 @@
         </ul>
         {% if spectrum_type == "single_crystal" %}
         <b>Define a custom q-points path for the structure factor</b>: <br>
-        we can provide a specific reciprocal space path, for plotting, in the following format: <br>
+        you can also a specific reciprocal space path for plotting, in the following format: <br>
         (1) each linear path should be divided by '|'; <br>
         (2) each path is composed of 'qxi qyi qzi - qxf qyf qzf' where qxi and qxf are, respectively,
         the initial and final q-components along the x-direction, in reciprocal lattice units (rlu).<br>

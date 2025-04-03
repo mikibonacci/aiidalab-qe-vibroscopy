@@ -129,7 +129,7 @@ class RamanWidget(ipw.VBox):
         self._wrong_syntax = StatusHTML(clear_after=8)
 
         self.broadening = ipw.FloatText(
-            description="Broadening (cm-1):",
+            description="Broadening (cm<sup>-1</sup>):",
             style={"description_width": "initial"},
         )
         ipw.link(
@@ -150,7 +150,7 @@ class RamanWidget(ipw.VBox):
                 title=dict(text="Powder Raman spectrum"),
                 barmode="overlay",
                 xaxis=dict(
-                    title="Wavenumber (cm-1)",
+                    title="Wavenumber (cm<sup>-1</sup>)",
                     nticks=0,
                 ),
                 yaxis=dict(
@@ -246,7 +246,7 @@ class RamanWidget(ipw.VBox):
                     ipw.VBox(
                         [
                             ipw.HTML(
-                                value=f"<b>{self._model.spectrum_type} Active Modes</b>"
+                                value=f"<b>{self._model.spectrum_type} active modes</b>"
                             ),
                             self.modes_table,
                         ]
@@ -281,7 +281,7 @@ class RamanWidget(ipw.VBox):
         self.spectrum.add_scatter(
             x=self._model.frequencies, y=self._model.intensities, name=""
         )
-        self.spectrum.layout.title.text = f"Powder {self._model.spectrum_type} Spectrum"
+        self.spectrum.layout.title.text = f"Powder {self._model.spectrum_type} spectrum"
         self.modes_table.layout = {
             "overflow": "auto",
             "height": "200px",

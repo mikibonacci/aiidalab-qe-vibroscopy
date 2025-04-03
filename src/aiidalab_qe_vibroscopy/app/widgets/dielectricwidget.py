@@ -27,9 +27,9 @@ class DielectricWidget(ipw.VBox):
         self.dielectric_results_help = ipw.HTML(
             """<div style="line-height: 140%; padding-top: 0px; padding-bottom: 5px">
             The DielectricWorkchain computes different properties: <br>
-                <em style="display: inline-block; margin-left: 20px;">-High Freq. Dielectric Tensor </em> <br>
-                <em style="display: inline-block; margin-left: 20px;">-Born Charges </em> <br>
-                <em style="display: inline-block; margin-left: 20px;">-Raman Tensors </em> <br>
+                <em style="display: inline-block; margin-left: 20px;">-High freq. dielectric tensor </em> <br>
+                <em style="display: inline-block; margin-left: 20px;">-Born charges </em> <br>
+                <em style="display: inline-block; margin-left: 20px;">-Raman tensors </em> <br>
                 <em style="display: inline-block; margin-left: 20px;">-The non-linear optical susceptibility tensor </em> <br>
                 All information can be downloaded as a JSON file. <br>
 
@@ -90,7 +90,7 @@ class DielectricWidget(ipw.VBox):
                     ),
                     ipw.VBox(
                         [
-                            ipw.HTML("<h3>Raman Tensor </h3>"),
+                            ipw.HTML("<h3>Raman tensor </h3>"),
                             self.raman_tensors_table,
                         ]
                     ),

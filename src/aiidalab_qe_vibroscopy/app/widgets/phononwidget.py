@@ -69,7 +69,7 @@ class PhononWidget(ipw.VBox):
         x_max = max(self.bands_pdos.data[1].x)
         self.bands_pdos.update_layout(
             xaxis=dict(title="q-points"),
-            yaxis=dict(title="Phonon Bands (THz)", range=[y_min - 0.1, y_max + 0.1]),
+            yaxis=dict(title="THz", range=[y_min - 0.1, y_max + 0.1]),
             xaxis2=dict(range=[0, x_max + 0.1]),
         )
         self.children = (

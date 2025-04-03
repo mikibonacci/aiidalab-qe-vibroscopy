@@ -2,7 +2,6 @@ import ipywidgets as ipw
 import numpy as np
 import plotly.graph_objs as go
 
-from IPython.display import display
 
 from aiidalab_qe.common.infobox import InfoBox
 
@@ -272,13 +271,13 @@ class EuphonicStructureFactorWidget(ipw.VBox):
         if self._model.spectrum_type == "single_crystal":
             self.custom_kpath_text = ipw.Text(
                 value="",
-                description="Custom path (rlu):",
+                description="Custom path (RLU):",
                 style={"description_width": "initial"},
                 continuous_update=True,
             )
-            custom_style = '<style>.custom-font { font-family: "Monospaced"; font-size: 16px; }</style>'
-            display(ipw.HTML(custom_style))
-            self.custom_kpath_text.add_class("custom-font")
+            # custom_style = '<style>.custom-font { font-family: "Monospaced"; font-size: 16px; }</style>'
+            # display(ipw.HTML(custom_style))
+            # self.custom_kpath_text.add_class("custom-font")
             ipw.link(
                 (self._model, "custom_kpath"),
                 (self.custom_kpath_text, "value"),

@@ -1,21 +1,22 @@
 <div id="guide-header">
   You've activated the phonon in-app guide. <br>
   In this guide, you will learn how to
-  use the app to compute the <b>phonons</b> of bulk Silicon (Si). As post-processing, you will also
-  compute the inelastic neutron scattering dynamical <b>structure factor S(Q, ω)</b>. <br>
+  use the app to compute the <b>phonons</b> of bulk silicon (Si). As post-processing, you will also
+  compute the inelastic neutron scattering (<b>INS</b>) <b>dynamical structure factor S(Q, ω)</b>. <br>
   <div class="alert alert-warning">
-    <b>Pre-requisite:</b> This guide assumes that you already followed the general &rarr; basic guide, or that you are already familiar with the app.
+    <b>Pre-requisite:</b> This guide assumes that you already followed the <b>Relaxation and electronic 
+      structure</b> &rarr; <b>Basic tutorial</b> guide, or that you are already familiar with the app.
   </div>
   Click on <b>Step 1: Select structure</b> and follow the instructions to proceed.
 </div>
 
 <div id="structure-step">
-  In the structure selection step, we select the Si structure from the examples. <br>
+  In the structure selection step, we select the silicon structure from the examples. <br>
   <div class="alert alert-success">
     <h4>Tasks</h4>
   <ul>
     <li><b>Click</b> on the "From examples" tab</li>
-    <li><b>Select</b> the Silicon structure in the dropdown menu</li>
+    <li>Select <b>Bulk silicon</b> from the dropdown list</li>
     <li>Click the <b>Confirm</b> button to proceed</li>
   </ul>
     <div class="alert alert-warning">
@@ -30,12 +31,15 @@
 </div>
 
 <div id="configuration-step">
-  In the Configure workflow (Step 2), we define the parameters needed to perform our phonon
+  In this second step (Configure workflow), we define the parameters needed to 
+  perform our phonon
   dispersion calculation.
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
-      <li>Select <b>Full geometry</b>, i.e. we optimize both cell parameters and atomic positions</li>
+      <li>Select <b>Full geometry</b>, i.e. we optimize both cell parameters and atomic positions. 
+        This is important when computing phonons, as we are interested in the 
+        curvature of the energy at its minimum (i.e., where forces are zero).</li>
       <li>Open <b>Step 2.1</b> for further instructions</li>
     </ol>
   </div>
@@ -47,24 +51,25 @@
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
-      <li>Select the <b>Vibrational Spectroscopy (VIBRO)</b> checkbox</li>
+      <li>Select the <b>Vibrational Spectroscopy (phonons)</b> checkbox</li>
       <li>Go to <b>Step 2.2</b> for further instructions</li>
     </ol>
   </div>
 </div>
 
 <div id="calculation-settings">
-  Here we can customize the calculation parameters. The settings are divided
-  into several tabs:
+  Here we can customize the calculation parameters.
+  The settings are divided into several tabs.
+  Two tabs are always present:
   <ul>
     <li><b>Basic settings</b>: top-level calculation settings</li>
     <li><b>Advanced settings</b>: fine-tune the calculations</li>
-    <li>
-      <b>Plugin settings</b>: parameters for plugin calculations including
-      phonon settings (Vibrational settings)
-    </li>
   </ul>
+  Additionally, each plugin activated in the previous step 2.1 can add additional tabs.
+
   Note that the app pre-configures defaults for most parameters.
+  <div class="alert alert-success">
+    See further instructions in the <b>Basic settings</b> panel below.
   </div>
 </div>
 
@@ -73,14 +78,14 @@
   <div class="alert alert-success">
     <h4>Tasks</h4>
       <ol>
-        <li>Select <b>Insulator</b> Electronic type</li>
-        <li>Select <b>Fast</b> protocol</li>
+        <li>Since we are simulating silicon, select the <b>Insulator</b> electronic type</li>
+        <li>Select the <b>Fast</b> protocol</li>
         <li>See further instructions in the <b>Vibrational settings</b> panel</li>
       </ol>
   </div>
   <div class="alert alert-warning">
     <b>Note:</b> For the purpose of completing this guide in short time, we will use the <b>Fast</b> protocol for default parameters.
-    However, you if dispose of enough computational resources, you can also select Moderate or Precise.
+    However, you if dispose of enough computational resources, you can also select Balanced or Stringent.
   </div>
 </div>
 
@@ -89,14 +94,21 @@
   <div class="alert alert-success">
     <h4>Tasks</h4>
       <ul>
-        <li>Select <b>Phonons for non-polar materials and INS</b> in the dropdown menu.</li>
+        <li>Select <b>Phonons for non-polar materials and INS</b> in the dropdown menu. 
+          (you can learn more about the other options, including 
+          IR and Raman spectroscopy, in the corresponding in-app guide.)</li>
         <li>Set the <b>Supercell size</b> to be [2,2,2], if not already set.</li>
-        <li>Estimate the <b>number of supercells</b> to see the number of supercells needed to computed finite displacement forces.
+        <li>Estimate the <b>number of supercells</b> to see the number of supercells needed to compute finite displacement forces.
           The output number should be equal to 1, thanks to symmetry between different displacements.</li>
-        <li>Click the <b>Confirm</b> button to proceed</li>
+        <li>Click on the <b>Confirm</b> button to proceed</li>
       </ul>
     <div class="alert alert-warning">
-      <b>Note:</b> a [1,1,1] supercell (i.e., unit cell) is not accurate to correctly reproduce phonons dispersion, but is fine for phonons at &Gamma;. Usually, at least a [2,2,2] supercell is needed.
+      <b>Note:</b> a [1,1,1] supercell computes phonons only at the &Gamma; point.
+      This is appopriate, e.g., for computing IR and Raman spectra.
+      However, it is not sufficient for interpolation in the whole 
+      Brillouin zone to correctly reproduce phonons dispersion: at least a 
+      [2,2,2] supercell is usually needed, and often a larger one for converged 
+      results..
     </div>
     <div class="alert alert-warning">
       <b>Warning:</b> Changes after confirmation will reset the following steps.
@@ -121,6 +133,19 @@
     label (pre-filled according to the settings of steps 1 & 2), as well as
     provide a detailed description of the workflow. Once we are ready, we can
     submit the workflow.
+
+    You first need to select which code (code executable + computer where this 
+    will run) to use for each step of the workflow. The Quantum ESPRESSO app 
+    should always install a local Quantum ESPRESSO executable that is sufficient 
+    for this tutorial, but you can setup additional codes installed on remote 
+    supercomputers. For more information on how to set up codes, please refer to the 
+    corresponding
+    <a
+      href="https://aiidalab-qe.readthedocs.io/howto/setup_computer_code.html#"
+      target="_blank"
+    >
+      documentation</a
+    >.
   </p>
   <div class="alert alert-success">
     <h4>Tasks</h4>
@@ -137,11 +162,14 @@
 </div>
 
 <div id="results-step">
+  Below you can monitor the status of the calculation, that might take 
+  several minutes to conclude even if we are using the fast protocol.
+
+  Click on the <b>Results</b> panel.
   In the results panel, each tab will open results pertaining to a specific
   calculation submitted by the workflow.
   <div class="alert alert-success">
     See further instructions below in the <b>Vibroscopy</b> results tab.
-    Once the calculation is complete, click on the <b>Load results</b> button to load the available results.
   </div>
 </div>
 
@@ -167,8 +195,15 @@
     <h4>Tasks</h4>
     <ol>
       <li>
-        Check the spectrum and verify that there is a degenerate mode around 12.11 THz for <b>q</b>=X.
+        Check the phonon band structure and verify that there is a degenerate mode around 12.11 THz for <b>q</b>=X.
       </li>
+      <li>
+        Feel free to zoom in and out and note how the phonon DOS is synchronized 
+        with the phonon band structure 
+        panel. Note that to zoom out, you can hover on the plot and 
+        use the little "Home" icon that appears on the top right of the 
+        plots (more tools are also available there).     
+      </li> 
       <li>
         Verify that the computed specific heat (constant volume) at 300 K is more or less 39.73 J/(mol K).
       </li>
@@ -178,30 +213,34 @@
 </div>
 
 <div id="ins-results">
-  Here we obtain the dynamical structure factor (from inelastic neutron scattering INS) spectrum S(Q, ω).
+  Here we obtain the dynamical structure factor spectrum S(Q, ω) 
+  for inelastic neutron scattering (INS).  
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
       <li>
-        Click on the <b>Initialise INS data</b> to start computing the INS signal.
+        Click on the <b>Initialise INS data</b> to compute the INS 
+        signal (it will just take a few seconds).
       </li>
       <li>
         Change units to be THz.
       </li>
       <li>
-        Decrease the <b>q step</b> to be 0.01 Å<sup>-1</sup>.
+        Decrease the <b>q step</b> to be 0.01 Å<sup>-1</sup> and 
+        increase the number of energy bins <b>#E bins</b> to be 1000.
+        Then, click on the <b>Replot</b> button to update the plot.
       </li>
       <li>
-        Increase the number of energy bins <b>#E bins</b> to be 1000.
+        In order to see all phonon modes regardless of the value of S(Q, ω), 
+        select the <b>Plot mode</b> to be <b>DOS map</b>, 
+        replot and verify that you can find the same degenerate 
+        mode seen in the phonons spectrum.
       </li>
       <li>
-        Click on the <b>Replot</b> to perform again the calculation.
-      </li>
-      <li>
-        Select the <b>Plot mode</b> to be <b>DOS map</b>, replot and verify that you can find the same degenerate mode seen in the phonons spectrum.
-      </li>
-      <li>
-        Play with the other parameters to change the plot as you prefer.
+        Play with the other parameters to change the plot as you prefer. 
+        In particular, you can read more instructions clicking on the 
+        <b>Plot info</b> button. Try to use the custom k-points path specified 
+        in those instructions.
       </li>
     </ol>
   </div>
@@ -211,7 +250,7 @@
   <h4>Post-guide exercises</h4>
   <ol>
     <li>
-      In the Neutron scattering results tab, switch to <b>Powder sample</b> and try to perform similar analysis as done for the Single crystal.
+      In the Neutron scattering results tab, switch to <b>Powder sample</b> and try to perform similar analysis as done for a single crystal.
       <ul>
         <li>
           Verify that a signal is still present at the same frequency as the degenerate mode detected before.
@@ -222,8 +261,8 @@
       </ul>
     </li>
     <li>
-      Use the app to compute the phonon band structure of SiO2 (Silicon Oxide) and compare the results with the ones obtained for Silicon.
-      In the Vibrational settings, select the same simulation type as used in this example.
+      Use the app to compute the phonon band structure of SiO<sub>2</sub> (silicon oxide). Compare the results with the ones obtained for silicon. 
+      In the Vibrational settings, select the same simulation type as in this example.
     </li>
   </ol>
 </div>
