@@ -1,11 +1,11 @@
 <div id="guide-header">
   You've activated the Raman+IR in-app guide. <br>
   In this guide, you will learn how to
-  use the app to compute the <b>Raman/IR</b> spectra and <b>dielectric properties</b> 
+  use the app to compute the <b>Raman/IR</b> spectra and <b>dielectric properties</b>
   (dielectric and Raman tensors, Born effective charges) of bulk silicon (Si). <br>
   <div class="alert alert-warning">
-    <b>Pre-requisite:</b> This guide assumes that you already followed the 
-    <b>Relaxation and electronic structure</b> &rarr; <b>Basic tutorial</b> guide, 
+    <b>Pre-requisite:</b> This guide assumes that you already followed the
+    <b>Relaxation and electronic structure</b> &rarr; <b>Basic tutorial</b> guide,
     or that you are already familiar with the app.
   </div>
   Click on <b>Step 1: Select structure</b> and follow the instructions to proceed.
@@ -32,13 +32,13 @@
 </div>
 
 <div id="configuration-step">
-  In this second step (Configure workflow), we define the parameters needed to 
+  In this second step (Configure workflow), we define the parameters needed to
   perform the calculation.
   <div class="alert alert-success">
     <h4>Tasks</h4>
     <ol>
-      <li>Select <b>Full geometry</b>, i.e. we optimize both cell parameters and atomic positions. 
-        This is important when computing phonons, as we are interested in the 
+      <li>Select <b>Full geometry</b>, i.e. we optimize both cell parameters and atomic positions.
+        This is important when computing phonons, as we are interested in the
         curvature of the energy at its minimum (i.e., where forces are zero).</li>
       <li>Open <b>Step 2.1</b> for further instructions</li>
     </ol>
@@ -95,7 +95,7 @@
     <h4>Tasks</h4>
       <ul>
         <li>Select <b>IR/Raman and Dielectric in Primitive Cell Approach</b> in the dropdown menu.
-          We are only computing phonons at &Gamma;, so we do not need any supercell. 
+          We are only computing phonons at &Gamma;, so we do not need any supercell.
           Therefore the supercell settings are hidden.</li>
         <li>Click on the <b>Confirm</b> button to proceed</li>
       </ul>
@@ -123,11 +123,11 @@
     provide a detailed description of the workflow. Once we are ready, we can
     submit the workflow.
 
-    You first need to select which code (code executable + computer where this 
-    will run) to use for each step of the workflow. The Quantum ESPRESSO app 
-    should always install a local Quantum ESPRESSO executable that is sufficient 
-    for this tutorial, but you can setup additional codes installed on remote 
-    supercomputers. For more information on how to set up codes, please refer to the 
+    You first need to select which code (code executable + computer where this
+    will run) to use for each step of the workflow. The Quantum ESPRESSO app
+    should always install a local Quantum ESPRESSO executable that is sufficient
+    for this tutorial, but you can setup additional codes installed on remote
+    supercomputers. For more information on how to set up codes, please refer to the
     corresponding
     <a
       href="https://aiidalab-qe.readthedocs.io/howto/setup_computer_code.html#"
@@ -151,7 +151,7 @@
 </div>
 
 <div id="results-step">
-  Below you can monitor the status of the calculation, that might take 
+  Below you can monitor the status of the calculation, that might take
   several minutes to conclude even if we are using the fast protocol.
 
   Click on the <b>Results</b> panel.
@@ -172,7 +172,7 @@
         Click on the <b>Raman/IR spectra</b> tab to visualize the Raman and infrared spectra.
       </li>
       <li>
-        After having inspected the Raman/IR spectra tab, click on the <b>Dielectric Properties</b> tab.
+        After having inspected the Raman/IR spectra tab, click on the <b>Dielectric properties</b> tab.
       </li>
     </ol>
   </div>
@@ -192,10 +192,10 @@
       <li>
         Change the <b>Broadening</b> to 50 cm<sup>-1</sup> and click on the <b>Update plot</b> button.
       </li>
-      <li>Inspect the animation of the Raman active modes (feel free to rotate the 3D view and check the animated arrows, indicating the oscillation direction and magnitude). 
+      <li>Inspect the animation of the Raman active modes (feel free to rotate the 3D view and check the animated arrows, indicating the oscillation direction and magnitude).
         We suggest to change the amplitude to 4 and to show a 2x2x2 supercell.
         Do different modes show different displacement?</li>
-      <li>Go back to the <b>Dielectric Properties</b> tab.</li>
+      <li>Go back to the <b>Dielectric properties</b> tab.</li>
     </ol>
   </div>
 </div>
@@ -224,8 +224,8 @@
       In the Vibrational settings, select the same simulation type as used in this example.
     </li>
     <li>
-      Use the app to compute both phonons dispersion and Raman/IR spectra of bulk silicon. 
-      In the Vibrational settings, select the "IR/Raman, Phonons, Dielectric, INS properties" simulation type. 
+      Use the app to compute both phonons dispersion and Raman/IR spectra of bulk silicon.
+      In the Vibrational settings, select the "IR/Raman, Phonons, Dielectric, INS properties" simulation type.
       This will use a combined workflow to compute the phonon dispersion and the Raman/IR spectra in supercell approach.
     </li>
   </ol>

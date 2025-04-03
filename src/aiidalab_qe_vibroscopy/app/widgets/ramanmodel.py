@@ -216,7 +216,7 @@ class RamanModel(Model):
                     name="Depolarized",
                 )
             )
-            plot.layout.title.text = f"Powder {self.spectrum_type} Spectrum"
+            plot.layout.title.text = f"Powder {self.spectrum_type} spectrum"
         elif len(plot.data) == 2:
             self._update_trace(
                 plot.data[0], self.frequencies, self.intensities, "Polarized"
@@ -227,7 +227,7 @@ class RamanModel(Model):
                 self.intensities_depolarized,
                 "Depolarized",
             )
-            plot.layout.title.text = f"Powder {self.spectrum_type} Spectrum"
+            plot.layout.title.text = f"Powder {self.spectrum_type} spectrum"
 
     def _clear_depolarized_and_update(self, plot):
         """
@@ -240,10 +240,10 @@ class RamanModel(Model):
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
             plot.data[1].x = []
             plot.data[1].y = []
-            plot.layout.title.text = f"Powder {self.spectrum_type} Spectrum"
+            plot.layout.title.text = f"Powder {self.spectrum_type} spectrum"
         elif len(plot.data) == 1:
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
-            plot.layout.title.text = f"Powder {self.spectrum_type} Spectrum"
+            plot.layout.title.text = f"Powder {self.spectrum_type} spectrum"
 
     def _update_single_crystal_plot(self, plot):
         """
@@ -256,10 +256,10 @@ class RamanModel(Model):
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
             plot.data[1].x = []
             plot.data[1].y = []
-            plot.layout.title.text = f"Single Crystal {self.spectrum_type} Spectrum"
+            plot.layout.title.text = f"Single crystal {self.spectrum_type} spectrum"
         elif len(plot.data) == 1:
             self._update_trace(plot.data[0], self.frequencies, self.intensities, "")
-            plot.layout.title.text = f"Single Crystal {self.spectrum_type} Spectrum"
+            plot.layout.title.text = f"Single crystal {self.spectrum_type} spectrum"
 
     def _update_trace(self, trace, x_data, y_data, name):
         """
@@ -345,7 +345,7 @@ class RamanModel(Model):
         # Create an HTML table with the active modes
         table_data = [list(x) for x in zip(self.rounded_frequencies, self.labels)]
         table_html = "<table>"
-        table_html += "<tr><th>Frequencies (cm-1) </th><th> Label</th></tr>"
+        table_html += "<tr><th>Frequencies (cm<sup>-1</sup>) </th><th> Label</th></tr>"
         for row in table_data:
             table_html += "<tr>"
             for cell in row:

@@ -45,7 +45,7 @@ class EuphonicResultsModel(Model):
     # Here bw we define the common traits of the model. Later (in the init), we will inject
     # the specific ones for the single crystal, powder and q_planes cases.
     q_spacing = tl.Float(0.1)  # q-spacing for the linear path
-    energy_broadening = tl.Float(0.5)  # energy broadening
+    energy_broadening = tl.Float(0.5)  # energy broadening meV
     ebins = tl.Int(200)  # energy bins
     temperature = tl.Float(0)  # temperature
     weighting = tl.Unicode("coherent")  # weighting
@@ -112,11 +112,13 @@ class EuphonicResultsModel(Model):
         with self.hold_trait_notifications():
             for trait in self.traits():
                 if trait not in [
-                    "intensity_filter",
-                    "energy_units",
+                    # "intensity_filter",
+                    # "energy_units",
+                    "energy_broadening",
                     "info_legend_text",
                 ]:
                     setattr(self, trait, self._get_default(trait))
+        setattr(self, "energy_broadening", 0.5)
 
     def fetch_data(self):
         """Fetch the data from the database or from the uploaded files."""
@@ -235,6 +237,11 @@ class EuphonicResultsModel(Model):
             self.ticks_labels = ticks_labels
 
             self.z = final_zspectra.T
+
+            # Filter upper window. Try default custom path without this
+            # filter, you obtain a max intensity of several milions (arb. units)...
+            self.z = np.clip(self.z, 0, 10)
+
             self.x = list(
                 range(self.ticks_positions[-1] + 1)
             )  # we have, instead, the ticks positions and labels

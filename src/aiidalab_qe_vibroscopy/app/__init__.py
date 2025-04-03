@@ -15,7 +15,7 @@ from pathlib import Path
 
 
 class VibroPluginOutline(PluginOutline):
-    title = "Vibrational Spectroscopy (VIBRO)"
+    title = "Vibrational spectroscopy (phonons)"
 
 
 property = {
@@ -34,7 +34,7 @@ property = {
     },
     "workchain": workchain_and_builder,
     "guides": {
-        'title': "Phonons",
-        'path': Path(__file__).resolve().parent / "guides",
+        "title": "Phonons",
+        "path": Path(__file__).resolve().parent / "guides",
     },
 }
