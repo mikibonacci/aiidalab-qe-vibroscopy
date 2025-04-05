@@ -5,6 +5,13 @@ while the latter requires a range of q-points.
 We have a set of common parameters that are shared between the two types of calculations.
 """
 
+import platform
+
+try: 
+    platform = platform.machine()
+except:
+    platform = 'aarch'
+
 common_parameters = {
     "weighting": "coherent",  # Spectral weighting to plot: DOS, coherent inelastic neutron scattering (default: dos)
     "grid": None,  # FWHM of broadening on q axis in 1/LENGTH_UNIT (no broadening if unspecified). (default: None)
@@ -30,7 +37,7 @@ common_parameters = {
     "save_to": None,
     "asr": "reciprocal",  # Apply an acoustic-sum-rule (ASR) correction to the data: "realspace" applies the correction to the force constant matrix in real space. "reciprocal" applies the correction to the dynamical matrix at each q-point. (default: None)
     "dipole_parameter": 1.0,  # Set the cutoff in real/reciprocal space for the dipole Ewald sum; higher values use more reciprocal terms. If tuned correctly this can result in performance improvements. See euphonic-optimise-dipole-parameter program for help on choosing a good DIPOLE_PARAMETER. (default: 1.0)
-    "use_c": True,
+    "use_c": False if 'arm' in platform else True, # because no C support in arm
     "n_threads": 1,
 }
 
