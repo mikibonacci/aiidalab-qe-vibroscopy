@@ -16,8 +16,14 @@ pip install phonopy --user # if phonopy is not installed in your machine; it sho
 aiidalab-qe-vibroscopy setup-phonopy # setup phonopy@localhost in AiiDA; this post-install command is automatically triggered if you install the plugin from the aiidalab-qe interface.
 ```
 
-### h5py installation for arm64 architectures
+### Specific details for arm64 architectures
 
+#### Installation of scipy from conda is required
+
+In case of `arm64` architecture, please run `aiidalab-qe-vibroscopy setup-phonopy`. 
+This will install the correct version of scipy to work with the package.
+
+#### h5py issues
 In case the installation of the `aiidalab-qe-vibroscopy` fails due to `h5py` installation problem, you may try to first install
 `h5py` by:
 
