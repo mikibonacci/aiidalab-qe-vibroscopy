@@ -12,6 +12,12 @@ we suppose phonopy is already installed (pip install phonopy --user).
 So we only setup in AiiDA.
 """
 
+import platform
+
+try:
+    machine = platform.machine()
+except:
+    machine = 'aarch'
 
 @click.group()
 def cli():
@@ -55,6 +61,15 @@ def setup_phonopy():
     else:
         print("Code phonopy@localhost is already installed! Nothing to do here.")
 
+    if 'arm' in machine: # we need to install scipy from conda only if arm machine. OPENBLAS broken in the pip one.
+        command = [
+            "conda",
+            "install",
+            "scipy==1.13.1",
+            "--y",
+        ]
+        # Use subprocess.run to run the command
+        subprocess.run(command, check=True)
 
 if __name__ == "__main__":
     cli()
