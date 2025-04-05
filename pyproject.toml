@@ -24,8 +24,7 @@ dependencies = [
     "pre-commit",
     "euphonic==1.3.0",
     "kaleido",
-    "weas-widget==0.1.25",
-    "spglib==2.5.0"
+    "weas-widget==0.1.25"
 ]
 
 [tool.ruff.lint]
