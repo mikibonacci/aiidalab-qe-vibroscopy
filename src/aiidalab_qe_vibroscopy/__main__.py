@@ -71,5 +71,14 @@ def setup_phonopy():
         # Use subprocess.run to run the command
         subprocess.run(command, check=True)
 
+        command = [
+            "pip",
+            "install",
+            "spglib==2.5.0",
+            "--y",
+        ]
+        # Use subprocess.run to run the command
+        subprocess.run(command, check=True)
+
 if __name__ == "__main__":
     cli()
