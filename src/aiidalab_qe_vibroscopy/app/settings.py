@@ -167,6 +167,11 @@ class VibroConfigurationSettingPanel(
             ],
         )
 
+        for direction in [self.supercell_x, self.supercell_y, self.supercell_z]:
+            direction.observe(
+                self._model.on_supercell_change,
+                "value",
+            )
         ## start supercell hint:
 
         # supercell data

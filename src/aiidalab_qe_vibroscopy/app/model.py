@@ -226,3 +226,10 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
             self.supercell_number_estimator = f"{len(supercells)}"
 
         return
+
+    def on_supercell_change(self, _):
+        self.supercell = [
+            self.supercell_x,
+            self.supercell_y,
+            self.supercell_z,
+        ]
