@@ -24,6 +24,7 @@ def generate_force_constant_instance_temporary_fix(
     data = euphonic.readers.phonopy.read_interpolation_data(
         path=path, summary_name=summary_name, fc_name=fc_name
     )
+    data.pop("born", None)
     fc = euphonic.ForceConstants.from_dict(data)
     # if fc.born is not None:
     #     fc = cls.from_total_fc_with_dipole(
