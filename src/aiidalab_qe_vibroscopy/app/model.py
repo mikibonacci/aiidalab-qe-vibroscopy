@@ -74,6 +74,7 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
             ("IR/Raman and Dielectric in Primitive Cell Approach", 2),
             ("Phonons for non-polar materials and INS", 3),
             ("Dielectric properties", 4),
+            ("MLIP-Phonons for non-polar materials", 5),
         ],
     )
     simulation_type = tl.Int(1)

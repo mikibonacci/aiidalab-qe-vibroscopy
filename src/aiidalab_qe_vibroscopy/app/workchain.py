@@ -42,6 +42,7 @@ def get_builder(codes, structure, parameters):
     protocol = parameters["workchain"].pop("protocol", "fast")
     pw_phonon_code = codes.get("phonon")["code"]
     pw_dielectric_code = codes.get("dielectric")["code"]
+    pythonjob_code = codes.get("pythonjob", {}).get("code", None)
     phonopy_code = codes.get("phonopy")["code"]
 
     simulation_mode = parameters["vibronic"].pop("simulation_type", 1)
@@ -90,6 +91,7 @@ def get_builder(codes, structure, parameters):
         phonon_code=pw_phonon_code,
         dielectric_code=pw_dielectric_code,
         phonopy_code=phonopy_code,
+        pythonjob_code=pythonjob_code,
         structure=structure,
         protocol=protocol,
         simulation_mode=simulation_mode,

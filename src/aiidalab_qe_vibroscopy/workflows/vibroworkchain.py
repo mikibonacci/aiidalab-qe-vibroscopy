@@ -13,6 +13,8 @@ from aiida_quantumespresso.calculations.functions.create_kpoints_from_distance i
 import math
 import numpy as np
 
+from aiida_phonopy.workflows.ase import PhonopyAseWorkChain
+
 
 GAMMA = "$\Gamma$"
 
@@ -235,6 +237,15 @@ class VibroWorkChain(WorkChain):
             },
         )
         spec.expose_inputs(
+            PhonopyAseWorkChain,
+            namespace="ase_workchain",
+            namespace_options={
+                "required": False,
+                "populate_defaults": False,
+                "help": "Inputs for the `PhonopyAseWorkChain`.",
+            },
+        )
+        spec.expose_inputs(
             PhonopyCalculation,
             namespace="phonopy_calc",
             namespace_options={
@@ -311,6 +322,14 @@ class VibroWorkChain(WorkChain):
                 "help": "Outputs of the `IRamanSpectraWorkChain`.",
             },
         )
+        spec.expose_outputs(
+            PhonopyAseWorkChain,
+            namespace="ase_workchain",
+            namespace_options={
+                "required": False,
+                "help": "Outputs of the `PhonopyAseWorkChain`.",
+            },
+        )
         spec.output(
             "phonon_bands",
             valid_type=orm.BandsData,
@@ -339,6 +358,7 @@ class VibroWorkChain(WorkChain):
         phonon_code=None,
         dielectric_code=None,
         phonopy_code=None,
+        pythonjob_code=None,
         protocol=None,
         overrides=None,
         options=None,
@@ -363,8 +383,8 @@ class VibroWorkChain(WorkChain):
 
         """
 
-        if simulation_mode not in range(1, 5):
-            raise ValueError("simulation_mode not in [1,2,3,4]")
+        if simulation_mode not in range(1, 6):
+            raise ValueError("simulation_mode not in [1,2,3,4,5]")
 
         builder = cls.get_builder()
 
@@ -545,27 +565,62 @@ class VibroWorkChain(WorkChain):
 
             builder.iraman = builder_iraman
 
-        elif simulation_mode == 3:
-            builder_phonon = PhononWorkChain.get_builder_from_protocol(
-                pw_code=phonon_code,
-                phonopy_code=phonopy_code,
-                structure=structure,
-                protocol=protocol,
-                overrides=overrides["phonon"],
-                phonon_property=phonon_property,
-                **kwargs,
-            )
+        elif simulation_mode in [3, 5]:
+            if simulation_mode == 3:
+                builder_phonon = PhononWorkChain.get_builder_from_protocol(
+                    pw_code=phonon_code,
+                    phonopy_code=phonopy_code,
+                    structure=structure,
+                    protocol=protocol,
+                    overrides=overrides["phonon"],
+                    phonon_property=phonon_property,
+                    **kwargs,
+                )
 
-            builder_phonon.phonopy.metadata.options.resources = {
-                "num_machines": 1,
-                "num_mpiprocs_per_machine": 1,
-            }
+                builder_phonon.phonopy.metadata.options.resources = {
+                    "num_machines": 1,
+                    "num_mpiprocs_per_machine": 1,
+                }
 
-            # To run euphonic: we should be able to get rid of this, using phonopy API.
-            builder_phonon.phonopy.settings = Dict(dict={"keep_phonopy_yaml": True})
+                # To run euphonic: we should be able to get rid of this, using phonopy API.
+                builder_phonon.phonopy.settings = Dict(dict={"keep_phonopy_yaml": True})
 
-            # MBO: I do not understand why I have to do this, but it works
-            builder.phonon = builder_phonon
+                # MBO: I do not understand why I have to do this, but it works
+                builder.phonon = builder_phonon
+
+            elif simulation_mode == 5:  # MLIP
+                from mace.calculators import mace_mp
+
+                builder_ase = PhonopyAseWorkChain.get_populated_builder(
+                    structure=structure,
+                    # calculator=MatterSimCalculator(),
+                    calculator=mace_mp(model="medium"),
+                    # max_number_of_atoms=200,
+                    supercell_matrix=overrides["phonon"]["supercell_matrix"],
+                    pythonjob_inputs={"code": pythonjob_code},
+                    phonopy_inputs={
+                        "code": phonopy_code,
+                        "parameters": orm.Dict({"band": "auto"}),
+                    },
+                )
+
+                builder_ase = AttributeDict(builder_ase)
+                builder_ase.phonopy.metadata.options["resources"] = {
+                    "num_machines": 1,
+                    "num_mpiprocs_per_machine": 1,
+                }
+                builder_ase.pythonjob.metadata = {
+                    "options": {
+                        "resources": {
+                            "num_machines": 1,
+                            "num_mpiprocs_per_machine": 1,
+                        },
+                    },
+                }
+
+                # To run euphonic: we should be able to get rid of this, using phonopy API.
+                builder_ase.phonopy["settings"] = Dict(dict={"keep_phonopy_yaml": True})
+                builder.ase_workchain = builder_ase
 
             # Adding the bands and pdos inputs.
             if structure.pbc != (True, True, True):
@@ -677,8 +732,9 @@ class VibroWorkChain(WorkChain):
             "iraman",
             "phonon",
             "dielectric",
+            "ML",
         ]
-        for wchain_idx in range(1, 5):
+        for wchain_idx in range(1, 6):
             if simulation_mode != wchain_idx:
                 builder.pop(available_wchains[wchain_idx - 1], None)
         builder.phonopy_calc.code = phonopy_code
@@ -716,6 +772,9 @@ class VibroWorkChain(WorkChain):
         elif "iraman" in self.inputs:
             self.ctx.key = "iraman"
             self.ctx.workchain = IRamanSpectraWorkChain
+        elif "ase_workchain" in self.inputs:
+            self.ctx.key = "ase_workchain"
+            self.ctx.workchain = PhonopyAseWorkChain
 
         self.ctx.structure = self.inputs.structure
 
@@ -739,6 +798,9 @@ class VibroWorkChain(WorkChain):
     def should_run_phonopy(self):
         # Final phonopy is needed for modes 1 and 3;
         # namely, we compute bands, pdos and thermo.
+        self.report(
+            f"Checking if phonopy calculations should be run for {self.ctx.key} with inputs: {self.inputs}"
+        )
         return (
             "phonopy_bands_dict" in self.inputs
             and self.ctx[self.ctx.key].is_finished_ok
@@ -752,7 +814,7 @@ class VibroWorkChain(WorkChain):
 
             # The following copy is done in order to be able to update the AttributesFrozenDict self.ctx.phonopy
             # try in a verdi shell: from plumpy.utils import AttributesFrozendict
-            if self.ctx.key == "phonon":
+            if self.ctx.key in ["phonon", "ase_workchain"]:
                 # See how this works in PhononWorkChain
                 inputs = AttributeDict(
                     self.exposed_inputs(PhonopyCalculation, namespace="phonopy_calc")

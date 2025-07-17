@@ -18,6 +18,7 @@ from aiidalab_qe.common.infobox import InAppGuide
 
 from aiida.plugins import DataFactory
 
+
 HubbardStructureData = DataFactory("quantumespresso.hubbard_structure")
 
 
@@ -290,17 +291,17 @@ class VibroConfigurationSettingPanel(
 
     def _on_change_simulation_type(self, _):
         self.supercell_widget.layout.display = (
-            "block" if self._model.simulation_type in [1, 3] else "none"
+            "block" if self._model.simulation_type in [1, 3, 5] else "none"
         )
         self.supercell_number_estimator.layout.display = (
             "block"
-            if self._model.simulation_type in [1, 3]
+            if self._model.simulation_type in [1, 3, 5]
             and len(self._model.input_structure.sites) <= 30
             else "none"
         )
         self.supercell_estimate_button.layout.display = (
             "block"
-            if self._model.simulation_type in [1, 3]
+            if self._model.simulation_type in [1, 3, 5]
             and len(self._model.input_structure.sites) <= 30
             else "none"
         )
