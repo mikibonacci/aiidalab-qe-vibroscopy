@@ -595,12 +595,25 @@ class VibroWorkChain(WorkChain):
                 builder.phonon = builder_phonon
 
             elif simulation_mode == 5:  # MLIP
-                from mace.calculators import mace_mp
+
+                def callback_mace_calculator():
+                    """Create and return a MACE calculator.
+                
+                    This function will be executed on the remote computer.
+                    All imports must be inside the function.pythonjob_inputs
+                    """
+                    from mace.calculators import mace_mp
+                    return mace_mp(
+                        model="medium",      # Options: small, medium, large
+                        device="cpu",        # Use 'cuda' if GPU available
+                        default_dtype="float64",
+                        dispersion=False     # Set True to include dispersion corrections
+                    )
+            
 
                 builder_ase = PhonopyAseWorkChain.get_populated_builder(
                     structure=structure,
-                    # calculator=MatterSimCalculator(),
-                    calculator=mace_mp(model="medium"),
+                    calculator=callback_mace_calculator,
                     # max_number_of_atoms=200,
                     supercell_matrix=overrides["phonon"]["supercell_matrix"],
                     pythonjob_inputs={"code": pythonjob_code},

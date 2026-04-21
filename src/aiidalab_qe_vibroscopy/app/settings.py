@@ -88,6 +88,9 @@ class VibroConfigurationSettingPanel(
         # Warning widget for electronic type
         self.warning_elec_type = ipw.HTML(layout=ipw.Layout(display="none"))
 
+        # Warning widget for MLIP simulation type
+        self.warning_mlip = ipw.HTML(layout=ipw.Layout(display="none"))
+
         self._on_electronic_type_change(None)
 
         self.hint_button_help = ipw.HTML(
@@ -303,6 +306,7 @@ class VibroConfigurationSettingPanel(
             ),
             self.infobox_simulations.infobox,
             self.warning_elec_type,
+            self.warning_mlip,
             self.supercell_widget,
             ipw.HBox(
                 [
@@ -322,6 +326,8 @@ class VibroConfigurationSettingPanel(
     def _on_electronic_type_change(self, _):
         self.refresh(specific="electronic_type")
         self._model.on_electronic_type_change()
+        if not hasattr(self, "warning_elec_type"):
+            return
         if self._model.WARNING_ELECTRONIC_TYPE_MESSAGE == "":
             self.warning_elec_type.layout.display = "none"
         else:
@@ -365,3 +371,21 @@ class VibroConfigurationSettingPanel(
         self._model.supercell_number_estimator = self._model._get_default(
             "supercell_number_estimator"
         )
+
+        self._model.on_simulation_type_change()
+        if self._model.WARNING_MLIP_MESSAGE:
+            self.warning_mlip.value = f"""
+            <div style="background-color: #cce5ff; color: #000; padding: 12px 15px;
+                        border-radius: 5px; border-left: 4px solid #004085;
+                        margin: 10px 0; line-height: 1.4;">
+                <div style="display: flex; align-items: flex-start;">
+                    <div style="margin-right: 10px; font-size: 20px;">ℹ️</div>
+                    <div style="flex: 1; color: #000;">
+                        {self._model.WARNING_MLIP_MESSAGE}
+                    </div>
+                </div>
+            </div>
+            """
+            self.warning_mlip.layout.display = "block"
+        else:
+            self.warning_mlip.layout.display = "none"

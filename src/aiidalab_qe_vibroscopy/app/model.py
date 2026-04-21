@@ -78,6 +78,7 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
 
     electronic_type = tl.Unicode()
     WARNING_ELECTRONIC_TYPE_MESSAGE = tl.Unicode("")
+    WARNING_MLIP_MESSAGE = tl.Unicode("")
 
     simulation_type_options = tl.List(
         trait=tl.List(tl.Union([tl.Unicode(), tl.Int()])),
@@ -156,23 +157,34 @@ class VibroConfigurationSettingsModel(ConfigurationSettingsModel, HasInputStruct
 
             self.supercell = [self.supercell_x, self.supercell_y, self.supercell_z]
 
+    def on_simulation_type_change(self, _=None):
+        if self.simulation_type == 5:
+            self.WARNING_MLIP_MESSAGE = (
+                "MACE (<code>mace-torch</code>) must be installed inside the Python environment "
+                "of the <b>PythonJob</b> code that will run the MLIP calculations. "
+                "Please ensure it is available in that virtual environment before submitting."
+            )
+        else:
+            self.WARNING_MLIP_MESSAGE = ""
+
     def on_electronic_type_change(self, _=None):
         if self.electronic_type == "metal":
-            # For metals, only allow simulation type 3
-            if self.simulation_type != 3:
+            # For metals, only allow simulation type 3 and 5
+            if self.simulation_type not in [3, 5]:
                 self.simulation_type = 3
 
             # and print a warning message to the user, saying that only simulation type 3 is allowed
             self.WARNING_ELECTRONIC_TYPE_MESSAGE = """
             <div style="line-height: 1.4; margin-bottom: 5px; color: black;">
-                <strong>Warning:</strong> For metallic systems, only the simulation type
-                "Phonons for non-polar materials and INS" is allowed. Please switch the "Electronic type" to "Insulator" in
+                <strong>Warning:</strong> For metallic systems, only the simulations
+                "Phonons for non-polar materials and INS" and "MLIP-Phonons for non-polar materials" are allowed. Please switch the "Electronic type" to "Insulator" in
                 the Basic Settings panel,
                 if you wish to use other simulation types (i.e. including the calculation of dielectric properties).
             </div>
             """
             self.simulation_type_options = [
-                ("Phonons for non-polar materials and INS", 3)
+                ("Phonons for non-polar materials and INS", 3),
+                ("MLIP-Phonons for non-polar materials", 5),
             ]
         else:
             # For insulators, all simulation types are allowed
