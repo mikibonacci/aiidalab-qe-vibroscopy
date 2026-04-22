@@ -321,6 +321,8 @@ class VibroConfigurationSettingPanel(
     def _on_electronic_type_change(self, _):
         self.refresh(specific="electronic_type")
         self._model.on_electronic_type_change()
+        if not self.rendered:
+            return
         if self._model.WARNING_ELECTRONIC_TYPE_MESSAGE == "":
             self.warning_elec_type.layout.display = "none"
         else:
