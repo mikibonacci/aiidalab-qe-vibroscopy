@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "aiidalab-qe-vibroscopy"
 description="AiiDAlab QE plugin for vibrational spectoscopies."
-version = "1.2.3"
+version = "1.2.4"
 authors = [
     {name = "Miki Bonacci", email = "miki.bonacci@psi.ch"},
     {name = "Andres Ortega Guerrero", email = "andres.ortega-guerrero@empa.ch"}
@@ -18,13 +18,13 @@ classifiers = [
 keywords = ["aiidalab", "plugin"]
 requires-python = ">=3.8"
 dependencies = [
-    "aiida-vibroscopy>=1.3.0",
-    "aiida-phonopy>=1.1.3",
-    "phonopy==2.25.0",
+    "aiida-vibroscopy==1.3.0",
+    "aiida-phonopy==1.2.1",
+    "aiida-pythonjob==0.2.5",
     "pre-commit",
     "euphonic==1.3.0",
     "kaleido",
-    "weas-widget==0.1.25"
+    "weas-widget>=0.2.6"
 ]
 
 [tool.ruff.lint]
